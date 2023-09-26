@@ -61,10 +61,10 @@ class AircraftParams:
             self.__setattr__(param, params.get(param))
 
 
-class GuidanceTransferFunctions:
-    def __init__(self, transfer_functions):
-        for tf in transfer_functions.keys():
-            self.__setattr__(tf, transfer_functions.get(tf))
+class TransferFunctions:
+    def __init__(self, **kwargs):
+        for tf in kwargs.keys():
+            self.__setattr__(tf, kwargs.get(tf))
 
 
 class FixedWingVehicle:
@@ -84,25 +84,20 @@ class FixedWingVehicle:
     units = 'Imperial'
     angles = 'Radians'
 
-    def __init__(self, params, guidanceTFs, launched=False, ICs=None):
+    def __init__(self, params, launched=False, ICs=None):
         """Initalize a Fixed Wing Vehicle object.
         
         Parameters
         ----------
         params : :dict:`Dict of all applicable aircraft parameters`
             Parameters of the aircraft.
-        guidanceTFs : :dict:`Dict of applicable PI guidance transfer function constants`
-            Parameters of the PI Guidance Transfer Functions.
         launched : :bool:`Launched boolean`
             Boolean to set the status of the aircraft as launched.
         ICs : :dict:`Initial conditions`
             Initial conditions of aircraft state.
         """
         self.AircraftParams = AircraftParams(params)
-        self.GuidanceTransferFunctions = GuidanceTransferFunctions(guidanceTFs)
         self.launched = launched
-        self.UserCommand = [np.nan, np.nan, np.nan]  # Velocity, h_dot (rate of climb), psi (heading)
-        self.UserCommandHistory = self.UserCommand
         if ICs is not None:
             self.setInitialConditions(ICs)
 
@@ -110,6 +105,52 @@ class FixedWingVehicle:
     def setInitialConditions(self, ICs):
         self.InitialConditions = InitialConditions(ICs)
 
+
+class FW_NLPerf_GuidanceSystem:
+    """ Fixed-Wing Nonlinear Performance Guidance System
+    TODO:
+        After algorithm implementation, change the following:
+        m -> mass
+        v_BN_W_c -> V_veh_c
+        v_BN_W -> V_veh
+        sigma_c -> heading_c
+        sigma -> heading
+
+    Guidance System inputs:
+        m           mass of the aircraft
+        v_BN_W_c    Commanded inertial velocity
+        v_BN_W      Current inertial velocity (output from EOM)
+        gamma_c     Commanded flight path angle
+        gamma       Current flight path angle (output from EOM)
+        airspeed    Current airspeed (output from EOM)
+        sigma_c     Commanded sigma (?) - JDL uses sigma for psi (heading angle)
+        sigma       Current sigma (?) (output from EOM)
+
+    Guidance System outputs:
+        thrust      magnitude of thrust vector in line with aircraft body
+        lift        magnitude of lift vector in line with aircraft z-axis
+        alpha_c     angle of attack commanded by guidance system (unused in EOM)
+        mu          wind-axes bank angle (phi_w in textbook)
+        h_c         commanded height of aircraft (? - unused in EOM)
+
+    Guidance System assumptions:
+        a. Air mass (wind) uniformly translating w.r.t. Earth-fixed inertial frame
+        b. Aero forces/moments on vehicle depend only on airspeed and orientation to air mass
+        c. Presence of winds give rise to differences in inertial velocity and airspeed
+    """
+
+    def __init__(self, vehicle, K_Tp, K_Ti, K_Lp, K_Li, K_mu_p):
+        self.Vehicle = vehicle
+        self.TF = TransferFunctions()
+        self.TF.K_Tp = K_Tp
+        self.TF.K_Ti = K_Ti
+        self.TF.K_Lp = K_Lp
+        self.TF.K_Li = K_Li
+        self.TF.K_mu_p = K_mu_p
+        self.UserCommand = [np.nan, np.nan, np.nan]  # Velocity, h_dot (rate of climb), psi (heading)
+        self.UserCommandHistory = self.UserCommand
+        self.units = self.Vehicle.units  # Adopt units from vehicle at init
+        self.angles = self.Vehicle.angles  # Adopt angle units from vehicle at init
 
     def userCommandTrajectory(self, velocity, rate_of_climb, heading):
         # Set the new user command
@@ -139,14 +180,9 @@ if __name__ == '__main__':
                                'wing_area': 1745,
                                'aspect_ratio': 10.1,
                                'wing_eff': 0.613}
-
-    PI_guidance_TFs = {'K_Tp': 0.08,
-                    'K_Ti': 0.002,
-                    'K_Lp': 0.5,
-                    'K_Li': 0.01,
-                    'K_mu_p': 0.075}
     
-    my_C130 = FixedWingVehicle(new_aircraft_parameters, PI_guidance_TFs)
+    my_C130 = FixedWingVehicle(new_aircraft_parameters)
+    C130_Guidance = FW_NLPerf_GuidanceSystem(my_C130, 0.08, 0.002, 0.5, 0.01, 0.075)
 
     init_cond = {'v_BN_W': 400 * mph2fps,
                  'h_o': 0,
@@ -158,6 +194,8 @@ if __name__ == '__main__':
                  'weight': 300000}
     
     my_C130.setInitialConditions(init_cond)
-    my_C130.userCommandTrajectory(450 * mph2fps, 5 * d2r, 15 * d2r)
+    C130_Guidance.userCommandTrajectory(450 * mph2fps, 5 * d2r, 15 * d2r)
 
-    print(my_C130.UserCommandHistory)
+    print(my_C130.InitialConditions.lat)
+    print(C130_Guidance.TF.K_Li)
+    print(C130_Guidance.UserCommand)
