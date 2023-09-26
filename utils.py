@@ -29,7 +29,7 @@ def discretize_sys(A, B, dt):
     return F, G
 
 
-def build_dcm(phi, theta, psi):
+def eul_angles_to_dcm(phi, theta, psi):
     """
     Return direction cosine matrix (DCM) C_(N<-B) related to 3-2-1 Euler Angles
 
