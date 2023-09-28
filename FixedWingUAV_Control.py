@@ -14,7 +14,7 @@ __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
 import numpy as np
-from scipy import solve_ivp
+from scipy.integrate import solve_ivp
 import pandas as pd
 import pathlib
 import wgs84
@@ -69,6 +69,7 @@ class AircraftParams:
         self.wing_area = np.nan
         self.aspect_ratio = np.nan
         self.wing_eff = np.nan
+        self.mdot = 10  # Fuel burn rate
         self.setAircraftParameters(params)
 
     def setAircraftParameters(self, params):
@@ -90,53 +91,72 @@ class FixedWingVehicle:
     """
     units = 'Imperial'
     angles = 'Radians'
+    dt = 0.01  # Default time step for the vehicle
 
-    def __init__(self, params, ICs=None):
+    def __init__(self, params, m, v_BN_W, gamma, sigma, lat, lon, h, alpha, drag, time=0):
         """Initalize a Fixed Wing Vehicle object.
 
         Parameters
         ----------
         params : :dict:`Dict of all applicable aircraft parameters`
             Parameters of the aircraft.
-        ICs : :dict:`Initial conditions`
-            Initial conditions of aircraft state. If not provided, the object will be initialized
-                with empty arrays for all state variables.
-            Allowable keys are: m, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag, and time
-                (note that time for the initial conditions is the start time of the vehicle's state, and
-                differs from the dt parameter of the FixedWingVehicle.updateState function) 
+        m : :float:`Initial mass of vehicle`
+        v_BN_W : :float:`Initial inertial velocity of aircraft`
+        gamma : :float:`Initial flight path angle`
+        sigma : :float:`Initial wind-axes heading angle`
+        lat : :float:`Initial latitude`
+        lon : :float:`Initial longitude`
+        h : :float:`Initial height above ground` - TODO
+        alpha : :float:`Initial vehicle angle of attack`
+        drag : :float:`Initial vehicle drag force`
+        time : :float:`Initial vehicle time (default is 0)`
         """
+
+        # Set the aircraft physical parameters
         self.AircraftParams = AircraftParams(params)
-        self.wind = self.state.v_WN_N
 
         # Initialize vehicle state variables
-        self.m = []
-        self.weight = []
-        self.v_BN_W = []
-        self.v_WN_N = []  # Added for future time-dependent winds
-        self.gamma = []
-        self.sigma = []
-        self.lat = []
-        self.lon = []
-        self.h = []
-        self.airspeed = []
-        self.alpha = []
-        self.drag = []
-        self.time = []
+        self.m = [m]
+        self.weight = [m * const_gravity]
+        self.v_BN_W = [v_BN_W]
+        self.v_WN_N = [0, 0, 0]  # Added for future time-dependent winds, default winds are none
+        self.gamma = [gamma]
+        self.sigma = [sigma]
+        self.lat = [lat]
+        self.lon = [lon]
+        self.h = [h]
+        # self.airspeed = [airspeed]
+        self.alpha = [alpha]
+        self.drag = [drag]
+        self.time = [time]
+
+    def setWinds(self, v_WN_N):
+        """
+            Right now, this function only sets the static wind speed.
+            In the future, I want to have the ability to create time-dependent winds,
+            and to save wind state history.
+        """
+        self.v_WN_N = v_WN_N
 
 
-    def updateState(self, m, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag, dt):
-        self.m.append(m)
-        self.v_WN_N.append(self.wind)
+    def updateState(self, m=0, v_BN_W=0, gamma=0, sigma=0, lat=0, lon=0, h=0, airspeed=0, alpha=0, drag=0, time=0):
+        self.v_WN_N.append(self.v_WN_N)  # Constant wind; future versions can have shifting wind
         self.v_BN_W.append(v_BN_W)
         self.gamma.append(gamma)
         self.sigma.append(sigma)
         self.lat.append(lat)
         self.lon.append(lon)
         self.h.append(h)
-        self.airspeed.append(airspeed)
+        # self.airspeed.append(airspeed)
         self.alpha.append(alpha)
         self.drag.append(drag)
-        self.time.append(self.time[-1]+dt)
+        if time == 0:
+            time = self.time[-1] + self.dt
+        self.time.append(time)
+        if m == 0:
+            m = self.m[-1] - self.AircraftParams.mdot * (self.time[-1] - self.time[-2])
+        self.m.append(m)
+        self.weight.append(m * const_gravity)
 
 
 class FW_NLPerf_GuidanceSystem:
@@ -174,12 +194,16 @@ class FW_NLPerf_GuidanceSystem:
 
     def __init__(self, vehicle, K_Tp, K_Ti, K_Lp, K_Li, K_mu_p, dt=0.01, initialCommand=None):
         self.Vehicle = vehicle
+
+        # Set tuning parameters
         self.K_Tp = K_Tp
         self.K_Ti = K_Ti
         self.K_Lp = K_Lp
         self.K_Li = K_Li
         self.K_mu_p = K_mu_p
         self.dt = dt  # Default is 0.01 seconds
+
+        # Initialize user commands and set, if applicable
         self.UserCommand = [np.nan, np.nan, np.nan]  # Velocity, h_dot (rate of climb), psi (heading)
         self.v_BN_W_c = np.nan
         self.gamma_c = np.nan
@@ -209,7 +233,7 @@ class FW_NLPerf_GuidanceSystem:
         self.gamma_c = np.arcsin(rate_of_climb/velocity)  # Commanded flight path angle
         self.sigma_c = heading  # Commanded heading
 
-    def getGuidanceCommands(self, m, v_BN_W, gamma, airspeed, sigma, dt=None):
+    def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
         Note: Be sure to check the current vehicle units via:
             > [FW_NLPerf_GuidanceSystem].Vehicle.units
@@ -244,23 +268,36 @@ class FW_NLPerf_GuidanceSystem:
 
         if dt is None:
             dt = self.dt
-        thrust = self._thrustCommand(m, v_BN_W, dt)
+        thrust = self._thrustCommand()
+        lift, alpha_c, h_c = self._liftGuidanceSystem()
+        mu = self._headingGuidanceSystem()
         print(f'Commanding thrust: {thrust} lbf')
+        print(f'Commanding lift: {lift} lbf, by setting angle of attack to {alpha_c} and altitude to {h_c}')
+        print(f'Commanding wind-axes bank angle: {mu}')
 
-    def _thrustCommand(self, m, v_BN_W, dt):
+    def _thrustCommand(self):
         V_err_old = self.V_err
         xT_old = self.xT
-        self.V_err = self.v_BN_W_c - v_BN_W  # Calculate inertial velocity error
+        self.V_err = self.v_BN_W_c - self.Vehicle.v_BN_W[-1]  # Calculate inertial velocity error
 
-        # Evaluate ODE x_T_dot = m*V_err to receive x_T for new velocity error
-        sol = solve_ivp(self.__xT_dot_ode, [V_err_old, self.V_err], [xT_old])
-        self.xT = sol.xT[-1]
+        # Evaluate ODE x_T_dot = m*V_err via RK45 to receive x_T for new velocity error
+        sol = solve_ivp(self.__xT_dot_ode, [V_err_old, self.V_err], [xT_old], method='RK45')
+        self.xT = sol.y[-1][-1]
 
         # Use xT in calculation of Thrust command
-        Tc = self.K_Ti*self.xT + self.K_Tp*self.m[-1]*self.V_err
+        Tc = self.K_Ti*self.xT + self.K_Tp*self.Vehicle.m[-1]*self.V_err
+        if hasattr(self.Vehicle.AircraftParams, 'max_thrust'):
+            if Tc > self.Vehicle.AircraftParams.max_thrust:
+                Tc = self.Vehicle.AircraftParams.max_thrust
         return Tc
 
     def __xT_dot_ode(self, Ve, xT): return self.Vehicle.m[-1] * Ve
+
+    def _liftGuidanceSystem(self):
+        return np.nan, np.nan, np.nan
+
+    def _headingGuidanceSystem(self):
+        return np.nan
 
 
 if __name__ == '__main__':
@@ -282,7 +319,7 @@ if __name__ == '__main__':
                                'wing_area': 1745,
                                'aspect_ratio': 10.1,
                                'wing_eff': 0.613}
-    
+
     # Define the aircraft's initial conditions
     init_cond = {'v_BN_W': 400 * mph2fps,
                  'h': 0,
@@ -291,10 +328,12 @@ if __name__ == '__main__':
                  'lat': 33.2098 * d2r,
                  'lon': -87.5692 * d2r,
                  'v_WN_N': [25 * mph2fps, 25 * mph2fps, 0],
-                 'weight': 300000}
+                 'weight': 300000,
+                 'time': 0}
 
     # Build the aircraft object
-    my_C130 = FixedWingVehicle(new_aircraft_parameters, init_cond)
+    my_C130 = FixedWingVehicle(new_aircraft_parameters, m=300000/const_gravity, v_BN_W=400*mph2fps, gamma=0, sigma=0, lat=33.2098*d2r,
+                               lon=-87.5692*d2r, h=0, airspeed=0, alpha=0, drag=0)
 
     # Build the guidance system using the aircraft object and control system transfer function constants
     C130_Guidance = FW_NLPerf_GuidanceSystem(my_C130, 0.08, 0.002, 0.5, 0.01, 0.075)
@@ -306,10 +345,9 @@ if __name__ == '__main__':
     # C130_Guidance.getGuidanceCommands(300000/const_gravity, C130_Guidance.Vehicle.InitialConditions.v_BN_W, C130_Guidance.Vehicle.InitialConditions.gamma,
     #                                   C130_Guidance.Vehicle.InitialConditions.v_BN_W, C130_Guidance.Vehicle.InitialConditions.sigma)
 
-    print(my_C130.state.weight)
+    print(my_C130.v_BN_W, my_C130.weight)
     # print(C130_Guidance.TF.K_Li)
     # print(C130_Guidance.sigma_c)
 
-    C130_Guidance.Vehicle.updateState(300000*const_gravity, 405*mph2fps, 0, 0, 33.21 * d2r, -87.6 * d2r, 2,
-                                      405*mph2fps, 3*d2r, 0.2, 0.01)
-    print(my_C130.state)
+    C130_Guidance.Vehicle.updateState(v_BN_W=405*mph2fps)
+    print(my_C130.v_BN_W, my_C130.weight)
