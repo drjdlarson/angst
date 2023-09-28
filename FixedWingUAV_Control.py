@@ -9,7 +9,7 @@
         The attitude dynamics of the vehicle will be approximated.
 """
 __author__ = "Alex Springer"
-__version__ = "1.0.0"
+__version__ = "0.0.1"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
