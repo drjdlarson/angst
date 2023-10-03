@@ -252,10 +252,19 @@ class FW_NLPerf_GuidanceSystem:
         V_err_old = self.V_err
         xT_old = self.xT
         self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
+        print(f'V_err is {self.V_err} because commanded vel is {self.command.v_BN_W} and current vel is {self.v_BN_W[-1]}')
 
         # Evaluate ODE x_T_dot = m*V_err via RK45 to receive x_T for new velocity error
         sol = solve_ivp(self.__xT_dot_ode, [V_err_old, self.V_err], [xT_old], method='RK45')
         self.xT = sol.y[-1][-1]
+        # print(f'Solution from RK45: xT = {sol.y[-1][-1]}')
+        # NOTE: I solved for xT using my own trapezoidal solver, and got the same answer.
+        #   Thus, I think this is correct.
+
+        # Evaluate ODE x_T_dot = m*V_err via trapezoidal method to receive x_T for new velocity error
+        # sol = utils.trapezoidalODESolver(self.__xT_dot_ode, V_err_old, self.V_err)
+        # self.xT = sol
+        # print(f'Solution from homemade trapezoidal: xT = {sol}')
 
         # Use xT in calculation of Thrust command
         Tc = self.K_Ti*self.xT + self.K_Tp*self.mass[-1]*self.V_err
@@ -264,7 +273,7 @@ class FW_NLPerf_GuidanceSystem:
                 Tc = self.Vehicle.max_thrust
         return Tc
 
-    def __xT_dot_ode(self, Ve, xT): return self.mass[-1] * Ve
+    def __xT_dot_ode(self, Ve, xT=0): return self.mass[-1] * Ve
 
     def _liftGuidanceSystem(self):
         return np.nan, np.nan, np.nan
@@ -281,10 +290,10 @@ class FW_NLPerf_GuidanceSystem:
         self.lat.append(lat)
         self.lon.append(lon)
         self.h.append(h)
-        # self.airspeed.append(airspeed)
         self.alpha.append(alpha)
         self.drag.append(drag)
         if time == 0:
+            # If the user did not specify a time step, assume it's self.dt (inherited from vehicle class)
             time = self.time[-1] + self.dt
         self.time.append(time)
         if m == 0:
