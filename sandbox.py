@@ -10,15 +10,17 @@ This script is used as a sandbox for testing various functions in the FW_UAV_GNC
 from FixedWingUAV_Control import *
 import numpy as np
 import scipy.linalg as la
+import utils
 
 def exponential_decay(t, y): return -0.5*y
 
 if __name__ == "__main__":
-    sol = solve_ivp(exponential_decay, [0, 20], [2, 4, 8])
-    print(sol.t, sol.y[0], sol.y[1], sol.y[2])
+    with utils.Timer('sandbox_commands'):
+        sol = solve_ivp(exponential_decay, [0, 20], [2, 4, 8])
+        print(sol.t, sol.y[0], sol.y[1], sol.y[2])
 
-    a = [1, 2, 3]
-    print(np.linalg.norm(a))
-    print(la.norm(a))
+        a = [1, 2, 3]
+        print(np.linalg.norm(a))
+        print(la.norm(a))
 
-    print(np.sign(-1))
+        print(np.sign(-1))
