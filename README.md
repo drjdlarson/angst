@@ -32,3 +32,7 @@ This file contains the main FixedWingVehicle object class, FW_NLPerf_GuidanceSys
 ### Current Problem:
 
 The FW_NLPerf_GuidanceSystem algorithms are not currently functioning as required. Troubleshooting is on-going.
+
+### Future Developments
+
+This project will go public once the algorithms are completed and validated. At that time, the name of the project will be updated to its final working title. Current target date: NLT 13 OCT
