@@ -2,7 +2,7 @@
 """
 Created on Tue Feb 18 22:33:23 2020
 
-@author: ryan4
+@author: ryan4, modified by ahspringer
 """
 
 import numpy as np
@@ -16,6 +16,23 @@ def skew(x):
     return np.array([[0, -x[2], x[1]],
                      [x[2], 0, -x[0]],
                      [-x[1], x[0], 0]])
+
+
+def wind_vector(v_BN_W, gamma, sigma):
+    u_inf = v_BN_W * np.cos(gamma) * np.cos(sigma)
+    v_inf = v_BN_W * np.cos(gamma) * np.sin(sigma)
+    w_inf = v_BN_W * np.sin(gamma)
+    return la.norm([u_inf, v_inf, w_inf])
+
+
+def trapezoidalODESolver(func, a, b, n=10):
+    h = float(b - a) / n
+    s = 0.0
+    s += func(a)/2
+    for i in range(1, n):
+        s += func(a + i*h)
+    s += func(b)/2
+    return s*h
 
 
 def discretize_sys(A, B, dt):

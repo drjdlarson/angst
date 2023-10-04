@@ -79,9 +79,9 @@ class FixedWingVehicle:
         self.speed_max = VehicleParameters['speed_max']  # fps
         self.speed_min = VehicleParameters['speed_min']  # fps
         self.Kf = VehicleParameters['Kf']  # ?
-        self.omega_T = VehicleParameters['omega_T']  # rad/s
-        self.omega_L = VehicleParameters['omega_L']  # rad/s ?
-        self.omega_mu = VehicleParameters['omega_mu']  # rad/s ?
+        self.omega_T = VehicleParameters['omega_T']  # rad/s - time constant for engine/airframe response
+        self.omega_L = VehicleParameters['omega_L']  # rad/s  - time constant for engine/airframe response
+        self.omega_mu = VehicleParameters['omega_mu']  # rad/s  - time constant for engine/airframe response
         self.T_max = VehicleParameters['T_max']  # lbs
         self.K_Lmax = VehicleParameters['K_Lmax']  # lbs/fps^2
         self.mu_max = VehicleParameters['mu_max']  # rad
@@ -181,8 +181,8 @@ class FW_NLPerf_GuidanceSystem:
         self.lon = [InitialConditions['lon']]
         self.v_WN_N = [InitialConditions['v_WN_N']]
         self.weight = [InitialConditions['weight']]
-        print(self.weight)
         self.mass = [self.weight[0]/const_gravity]
+        self.airspeed = [utils.wind_vector(self.v_BN_W[0], self.gamma[0], self.sigma[0])]
 
         # Set vehicle GNC initiation time
         self.time = [time]
@@ -193,6 +193,11 @@ class FW_NLPerf_GuidanceSystem:
         self.angles = self.Vehicle.angles  # Adopt angle units from vehicle at init
         self.V_err = 0
         self.xT = 0
+        self.hdot_err = 0
+        self.xL = 0
+        self.Lc = 0
+        self.L = [0]
+        self.sigma_err = 0
 
     class userCommand:
         def __init__(self, v_BN_W, gamma, sigma):
@@ -241,20 +246,19 @@ class FW_NLPerf_GuidanceSystem:
 
         if dt is None:
             dt = self.dt
-        thrust = self._thrustGuidanceSystem()
-        lift, alpha_c, h_c = self._liftGuidanceSystem()
-        mu = self._headingGuidanceSystem()
+        thrust = self._thrustGuidanceSystem(dt)
+        lift, alpha_c, h_c = self._liftGuidanceSystem(dt)
+        mu = self._headingGuidanceSystem(dt)
         print(f'Commanding thrust: {thrust} lbf')
         print(f'Commanding lift: {lift} lbf, by setting angle of attack to {alpha_c} and altitude to {h_c}')
         print(f'Commanding wind-axes bank angle: {mu}')
 
-    def _thrustGuidanceSystem(self):
-        V_err_old = self.V_err
+    def _thrustGuidanceSystem(self, dt):
         xT_old = self.xT
         self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
 
         # Evaluate ODE x_T_dot = m*V_err via RK45 to receive x_T for new velocity error
-        sol = solve_ivp(self.__xT_dot_ode, [V_err_old, self.V_err], [xT_old], method='RK45')
+        sol = solve_ivp(self.__xT_dot_ode, [self.time[-1], self.time[-1] + dt], [xT_old], method='RK45')
         self.xT = sol.y[-1][-1]
 
         # Use xT in calculation of Thrust command
@@ -264,16 +268,52 @@ class FW_NLPerf_GuidanceSystem:
                 Tc = self.Vehicle.max_thrust
         return Tc
 
-    def __xT_dot_ode(self, Ve, xT): return self.mass[-1] * Ve
+    def _liftGuidanceSystem(self, dt):
+        # Step 1: Calculate max lift (L_max)
+        # Inputs: v_BN_W (Current aircraft inertial velocity)
+        # Outputs: L_max (maximum lift)
+        L_max = self.v_BN_W[-1]**2 * self.Vehicle.K_Lmax
 
-    def _liftGuidanceSystem(self):
-        return np.nan, np.nan, np.nan
+        # Step 2: Calculate commanded lift (L_c)
+        xL_old = self.xL
+        self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
+        # Evaluate ODE x_L_dot = m*h_dot_err via RK45 to receive x_L for Lift Command calculation
+        sol = solve_ivp(self.__xL_dot_ode, [self.time[-1], self.time[-1] + dt], [xL_old], method='RK45')
+        self.xL = sol.y[-1][-1]
+        self.Lc = self.K_Li*self.xL + self.K_Lp*self.mass[-1]*self.hdot_err
 
-    def _headingGuidanceSystem(self):
-        return np.nan
+        # Step 3: Saturation (upper/lower limits on commanded lift)
+        if self.Lc > L_max:
+            print(f'Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
+            self.Lc = L_max
+
+        # Step 4: Calculate lift
+        sol = solve_ivp(self.__L_dot_ode, [self.time[-1], self.time[-1] + dt], [self.L[-1]], method='RK45')
+        Lift = sol.y[-1][-1]
+
+        # Step 5: Calculate commanded angle of attack (alpha_c)
+        alpha_c = 2 * self.Lc / (const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2) + self.Vehicle.alpha_o
+
+        # Step 6: Calculate altitude command (h_c)
+        h_c = np.sin(self.command.gamma) * self.command.v_BN_W * (self.time[-1] + dt) + self.h[0]
+
+        # Step -1: return stuff
+        return Lift, alpha_c, h_c
+
+    def _headingGuidanceSystem(self, dt):
+        # NOTE mu in code equals Phi_W in book (wind-axes bank angle)
+        # NOTE sigma in code equals Psi_W in book (heading)
+        self.sigma_err = self.command.sigma - self.sigma[-1]
+        mu = self.K_mu_p*(self.command.v_BN_W / const_gravity) * self.sigma_err
+
+        if np.abs(mu) > self.Vehicle.mu_max:
+            print(f'Command bank angle {mu} exceeds max allowable bank angle |{self.Vehicle.mu_max}|')
+            mu = np.sign(mu) * self.Vehicle.mu_max
+
+        return mu
     
     def updateState(self, m=0, v_BN_W=0, gamma=0, sigma=0, lat=0, lon=0, h=0, airspeed=0, alpha=0, drag=0, time=0):
-        """ Potentially OBE """
+        """ Potentially OBE? """
         self.v_WN_N.append(self.v_WN_N)  # Constant wind; future versions can have shifting wind
         self.v_BN_W.append(v_BN_W)
         self.gamma.append(gamma)
@@ -281,17 +321,23 @@ class FW_NLPerf_GuidanceSystem:
         self.lat.append(lat)
         self.lon.append(lon)
         self.h.append(h)
-        # self.airspeed.append(airspeed)
         self.alpha.append(alpha)
         self.drag.append(drag)
         if time == 0:
+            # If the user did not specify a time step, assume it's self.dt (inherited from vehicle class)
             time = self.time[-1] + self.dt
         self.time.append(time)
         if m == 0:
-            m = self.m[-1] - self.AircraftParams.mdot * (self.time[-1] - self.time[-2])
-        self.m.append(m)
+            m = self.m[-1] - self.Vehicle.mdot * (self.time[-1] - self.time[-2])
+        self.mass.append(m)
         self.weight.append(m * const_gravity)
+        self.airspeed.append(utils.wind_vector(v_BN_W, gamma, sigma))
 
+    def __xT_dot_ode(self, t, xT=0): return self.mass[-1] * self.V_err
+
+    def __xL_dot_ode(self, t, xL): return self.mass[-1] * self.hdot_err
+
+    def __L_dot_ode(self, t, L): return -1*self.Vehicle.omega_L*L + self.Vehicle.omega_L*self.Lc
 
 if __name__ == '__main__':
     # Define the aircraft (example aircraft is C-130)
