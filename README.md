@@ -5,10 +5,9 @@
 </a> -->
 
 ![Contributors](https://img.shields.io/github/contributors/ahspringer/FW_UAV_GNC?style=plastic)
-![Forks](https://img.shields.io/github/forks/ahspringer/FW_UAV_GNC)
-![Stars](https://img.shields.io/github/stars/ahspringer/FW_UAV_GNC)
-<!-- ![Licence](https://img.shields.io/github/license/ahspringer/FW_UAV_GNC) -->
-![Issues](https://img.shields.io/github/ahspringer/FW_UAV_GNC)
+![Forks](https://img.shields.io/github/forks/ahspringer/FW_UAV_GNC?style=plastic)
+![Stars](https://img.shields.io/github/stars/ahspringer/FW_UAV_GNC?style=plastic)
+![Issues](https://img.shields.io/github/ahspringer/FW_UAV_GNC?style=plastic)
 
 ## Fixed Wing Guidance, Navigation, and Control - Nonlinear.
 
