@@ -197,6 +197,7 @@ class FW_NLPerf_GuidanceSystem:
         self.xL = 0
         self.Lc = 0
         self.L = [0]
+        self.sigma_err = 0
 
     class userCommand:
         def __init__(self, v_BN_W, gamma, sigma):
@@ -255,12 +256,10 @@ class FW_NLPerf_GuidanceSystem:
     def _thrustGuidanceSystem(self, dt):
         xT_old = self.xT
         self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
-        # print(f'V_err is {self.V_err} because commanded vel is {self.command.v_BN_W} and current vel is {self.v_BN_W[-1]}')
 
         # Evaluate ODE x_T_dot = m*V_err via RK45 to receive x_T for new velocity error
         sol = solve_ivp(self.__xT_dot_ode, [self.time[-1], self.time[-1] + dt], [xT_old], method='RK45')
         self.xT = sol.y[-1][-1]
-        # print(f'Solution from RK45: xT = {sol.y[-1][-1]}')
 
         # Use xT in calculation of Thrust command
         Tc = self.K_Ti*self.xT + self.K_Tp*self.mass[-1]*self.V_err
@@ -268,8 +267,6 @@ class FW_NLPerf_GuidanceSystem:
             if Tc > self.Vehicle.max_thrust:
                 Tc = self.Vehicle.max_thrust
         return Tc
-
-    def __xT_dot_ode(self, t, xT=0): return self.mass[-1] * self.V_err
 
     def _liftGuidanceSystem(self, dt):
         # Step 1: Calculate max lift (L_max)
@@ -303,12 +300,17 @@ class FW_NLPerf_GuidanceSystem:
         # Step -1: return stuff
         return Lift, alpha_c, h_c
 
-    def __xL_dot_ode(self, t, xL): return self.mass[-1] * self.hdot_err
-
-    def __L_dot_ode(self, t, L): return -1*self.Vehicle.omega_L*L + self.Vehicle.omega_L*self.Lc
-
     def _headingGuidanceSystem(self, dt):
-        return np.nan
+        # NOTE mu in code equals Phi_W in book (wind-axes bank angle)
+        # NOTE sigma in code equals Psi_W in book (heading)
+        self.sigma_err = self.command.sigma - self.sigma[-1]
+        mu = self.K_mu_p*(self.command.v_BN_W / const_gravity) * self.sigma_err
+
+        if np.abs(mu) > self.Vehicle.mu_max:
+            print(f'Command bank angle {mu} exceeds max allowable bank angle |{self.Vehicle.mu_max}|')
+            mu = np.sign(mu) * self.Vehicle.mu_max
+
+        return mu
     
     def updateState(self, m=0, v_BN_W=0, gamma=0, sigma=0, lat=0, lon=0, h=0, airspeed=0, alpha=0, drag=0, time=0):
         """ Potentially OBE? """
@@ -330,6 +332,12 @@ class FW_NLPerf_GuidanceSystem:
         self.mass.append(m)
         self.weight.append(m * const_gravity)
         self.airspeed.append(utils.wind_vector(v_BN_W, gamma, sigma))
+
+    def __xT_dot_ode(self, t, xT=0): return self.mass[-1] * self.V_err
+
+    def __xL_dot_ode(self, t, xL): return self.mass[-1] * self.hdot_err
+
+    def __L_dot_ode(self, t, L): return -1*self.Vehicle.omega_L*L + self.Vehicle.omega_L*self.Lc
 
 if __name__ == '__main__':
     # Define the aircraft (example aircraft is C-130)
