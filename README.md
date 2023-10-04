@@ -1,5 +1,15 @@
 # FW_UAV_GNC
 
+<!-- <a href="https://join.slack.com/t/ngc-goz8665/shared_invite/zt-r01kumfq-dQUT3c95BxEP_fnk4yJFfQ">
+<img alt="Join us on Slack" src="https://raw.githubusercontent.com/netlify/netlify-cms/master/website/static/img/slack.png" width="165"/>
+</a> -->
+
+![Contributors](https://img.shields.io/github/contributors/ahspringer/FW_UAV_GNC?style=plastic)
+![Forks](https://img.shields.io/github/forks/ahspringer/FW_UAV_GNC)
+![Stars](https://img.shields.io/github/stars/ahspringer/FW_UAV_GNC)
+<!-- ![Licence](https://img.shields.io/github/license/ahspringer/FW_UAV_GNC) -->
+![Issues](https://img.shields.io/github/ahspringer/FW_UAV_GNC)
+
 ## Fixed Wing Guidance, Navigation, and Control - Nonlinear.
 
 ### Description
@@ -10,10 +20,6 @@ This project is a nonlinear controller for a fixed-wing aircraft. It includes th
 
 This file contains the main FixedWingVehicle object class, FW_NLPerf_GuidanceSystem object class, and a simple function for running the FW_NLPerf_GuidanceSystem over a designated amount of time.
 
-#### Current problems
-
-The FW_NLPerf_GuidanceSystem algorithms are not currently functioning as required. Troubleshooting is on-going.
-
 ### Instructions
 
 1. To use the guidance system, first you must create a FixedWingVehicle object class. The class documentation will tell you which settings are required; all others are optional.
@@ -23,3 +29,7 @@ The FW_NLPerf_GuidanceSystem algorithms are not currently functioning as require
 5. After running the simulation, you can save your simulation state to a .pkl binary file by running utils.save_obj() and passing it the FW_NLPerf_GuidanceSystem object and a filepath.
 6. Finally, you can graph the results of the simulation by running utils.plotSim() and passing it the FW_NLPerf_GuidanceSystem object.
     NOTE: If you have already run a simulation and saved the resulting FW_NLPerf_GuidanceSystem object to a .pkl file, you can load the .pkl file into an object of class FW_NLPerf_GuidanceSystem by running utils.load_obj() and passing it the filepath.
+
+### Current Problem:
+
+The FW_NLPerf_GuidanceSystem algorithms are not currently functioning as required. Troubleshooting is on-going.
