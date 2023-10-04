@@ -9,11 +9,11 @@
 ![Stars](https://img.shields.io/github/stars/ahspringer/FW_UAV_GNC?style=plastic)
 ![Issues](https://img.shields.io/github/issues/ahspringer/FW_UAV_GNC?style=plastic)
 
-## Fixed Wing Guidance, Navigation, and Control - Nonlinear.
+## Fixed Wing Guidance, Navigation, and Control - Nonlinear
 
 ### Description
 
-This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWingUAV_Control.py, a developer sandbox, a wgs84.py script for use in calculating Earth approximations (not yet implemented), and a utils.py script which contains useful functions. The algorithms followed for the nonlinear controller are described by Dr. John Schierman in his Modern Flight Dynamics textbook.
+The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWingUAV_Control.py, a developer sandbox, a wgs84.py script for use in calculating Earth approximations (not yet implemented), and a utils.py script which contains useful functions.
 
 ### FixedWingUAV_Control.py
 
