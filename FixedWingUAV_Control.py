@@ -194,6 +194,8 @@ class FW_NLPerf_GuidanceSystem:
         self.V_err = 0
         self.xT = 0
         self.hdot_err = 0
+        self.Tc = 0
+        self.T = [0]
         self.xL = 0
         self.Lc = 0
         self.L = [0]
@@ -246,10 +248,10 @@ class FW_NLPerf_GuidanceSystem:
 
         if dt is None:
             dt = self.dt
-        thrust = self._thrustGuidanceSystem(dt)
+        thrust_c, thrust = self._thrustGuidanceSystem(dt)
         lift, alpha_c, h_c = self._liftGuidanceSystem(dt)
         mu = self._headingGuidanceSystem(dt)
-        print(f'Commanding thrust: {thrust} lbf')
+        print(f'Commanding thrust: {thrust_c} lbf, resulting in {thrust} lbf thrust')
         print(f'Commanding lift: {lift} lbf, by setting angle of attack to {alpha_c} and altitude to {h_c}')
         print(f'Commanding wind-axes bank angle: {mu}')
 
@@ -262,11 +264,21 @@ class FW_NLPerf_GuidanceSystem:
         self.xT = sol.y[-1][-1]
 
         # Use xT in calculation of Thrust command
-        Tc = self.K_Ti*self.xT + self.K_Tp*self.mass[-1]*self.V_err
-        if hasattr(self.Vehicle, 'max_thrust'):
-            if Tc > self.Vehicle.max_thrust:
-                Tc = self.Vehicle.max_thrust
-        return Tc
+        self.Tc = self.K_Ti*self.xT + self.K_Tp*self.mass[-1]*self.V_err
+
+        # Saturation of thrust command
+        if self.Tc > self.Vehicle.T_max:
+            print(f'Commanded thrust {self.Tc} exceeds max thrust {self.Vehicle.T_max}')
+            self.Tc = self.Vehicle.T_max
+
+        sol = solve_ivp(self.__T_dot_ode, [self.time[-1], self.time[-1] + dt], [self.T[-1]], method='RK45')
+        Thrust = sol.y[-1][-1]
+
+        # Saturation of vehicle thrust
+        if Thrust > self.Vehicle.T_max:
+            Thrust = self.Vehicle.T_max
+
+        return self.Tc, Thrust
 
     def _liftGuidanceSystem(self, dt):
         # Step 1: Calculate max lift (L_max)
@@ -274,7 +286,7 @@ class FW_NLPerf_GuidanceSystem:
         # Outputs: L_max (maximum lift)
         L_max = self.v_BN_W[-1]**2 * self.Vehicle.K_Lmax
 
-        # Step 2: Calculate commanded lift (L_c)
+        # Calculate commanded lift (L_c)
         xL_old = self.xL
         self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
         # Evaluate ODE x_L_dot = m*h_dot_err via RK45 to receive x_L for Lift Command calculation
@@ -282,22 +294,24 @@ class FW_NLPerf_GuidanceSystem:
         self.xL = sol.y[-1][-1]
         self.Lc = self.K_Li*self.xL + self.K_Lp*self.mass[-1]*self.hdot_err
 
-        # Step 3: Saturation (upper/lower limits on commanded lift)
+        # Saturation (upper/lower limits on commanded lift)
         if self.Lc > L_max:
             print(f'Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
             self.Lc = L_max
 
-        # Step 4: Calculate lift
+        # Calculate lift
         sol = solve_ivp(self.__L_dot_ode, [self.time[-1], self.time[-1] + dt], [self.L[-1]], method='RK45')
         Lift = sol.y[-1][-1]
 
-        # Step 5: Calculate commanded angle of attack (alpha_c)
+        if Lift > L_max:
+            Lift = L_max
+
+        # Calculate commanded angle of attack (alpha_c)
         alpha_c = 2 * self.Lc / (const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2) + self.Vehicle.alpha_o
 
-        # Step 6: Calculate altitude command (h_c)
+        # Calculate altitude command (h_c)
         h_c = np.sin(self.command.gamma) * self.command.v_BN_W * (self.time[-1] + dt) + self.h[0]
 
-        # Step -1: return stuff
         return Lift, alpha_c, h_c
 
     def _headingGuidanceSystem(self, dt):
@@ -334,6 +348,8 @@ class FW_NLPerf_GuidanceSystem:
         self.airspeed.append(utils.wind_vector(v_BN_W, gamma, sigma))
 
     def __xT_dot_ode(self, t, xT=0): return self.mass[-1] * self.V_err
+
+    def __T_dot_ode(self, t, T): return -1*self.Vehicle.omega_T*T + self.Vehicle.omega_T*self.Tc
 
     def __xL_dot_ode(self, t, xL): return self.mass[-1] * self.hdot_err
 
