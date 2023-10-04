@@ -1,11 +1,5 @@
 # FW_UAV_GNC
 
-![Contributors](https://img.shields.io/github/contributors/larymak/Python-project-Scripts?style=plastic)
-<!-- ![Forks](https://img.shields.io/github/forks/ahspringer/FW_UAV_GNC)
-![Stars](https://img.shields.io/github/stars/ahspringer/FW_UAV_GNC)
-![Licence](https://img.shields.io/github/license/ahspringer/FW_UAV_GNC) -->
-![Issues](https://img.shields.io/github/issues/ahspringer/FW_UAV_GNC)
-
 ## Fixed Wing Guidance, Navigation, and Control - Nonlinear.
 
 ### Description
