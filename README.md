@@ -4,7 +4,7 @@
 
 ### Description
 
-This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWingUAV_Control.py, a developer sandbox, a wgs84.py script for use in calculating Earth approximations (not yet implemented), and a utils.py script which contains useful functions. 
+This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWingUAV_Control.py, a developer sandbox, a wgs84.py script for use in calculating Earth approximations (not yet implemented), and a utils.py script which contains useful functions. The algorithms followed for the nonlinear controller are described by Dr. John Schierman in his Modern Flight Dynamics textbook.
 
 ### FixedWingUAV_Control.py
 
