@@ -18,6 +18,13 @@ def skew(x):
                      [-x[1], x[0], 0]])
 
 
+def wind_vector(v_BN_W, gamma, sigma):
+    u_inf = v_BN_W * np.cos(gamma) * np.cos(sigma)
+    v_inf = v_BN_W * np.cos(gamma) * np.sin(sigma)
+    w_inf = v_BN_W * np.sin(gamma)
+    return la.norm([u_inf, v_inf, w_inf])
+
+
 def trapezoidalODESolver(func, a, b, n=10):
     h = float(b - a) / n
     s = 0.0
