@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+""" Utility functions for FixedWingUAV_Control.py script
 """
-Created on Tue Feb 18 22:33:23 2020
-
-@author: ryan4, modified by ahspringer
-"""
+__author__ = "Alex Springer"
+__version__ = "1.0.0"
+__email__ = "springer.alex.h@gmail.com"
+__status__ = "Production"
 
 import numpy as np
 import scipy.linalg as la
 import time
 from contextlib import contextmanager
-import wgs84
 import pickle
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
