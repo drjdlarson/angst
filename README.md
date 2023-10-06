@@ -4,10 +4,10 @@
 <img alt="Join us on Slack" src="https://raw.githubusercontent.com/netlify/netlify-cms/master/website/static/img/slack.png" width="165"/>
 </a> -->
 
-![Contributors](https://img.shields.io/github/contributors/ahspringer/FW_UAV_GNC?style=plastic)
-![Forks](https://img.shields.io/github/forks/ahspringer/FW_UAV_GNC?style=plastic)
-![Stars](https://img.shields.io/github/stars/ahspringer/FW_UAV_GNC?style=plastic)
-![Issues](https://img.shields.io/github/issues/ahspringer/FW_UAV_GNC?style=plastic)
+![Contributors](https://img.shields.io/github/contributors/ahspringer/FixedWing_NAPS?style=plastic)
+![Forks](https://img.shields.io/github/forks/ahspringer/FixedWing_NAPS?style=plastic)
+![Stars](https://img.shields.io/github/stars/ahspringer/FixedWing_NAPS?style=plastic)
+![Issues](https://img.shields.io/github/issues/ahspringer/FixedWing_NAPS?style=plastic)
 
 ## Fixed Wing Guidance, Navigation, and Control: Nonlinear Aircraft-Performance Simulation
 
