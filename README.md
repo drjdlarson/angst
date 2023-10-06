@@ -33,7 +33,4 @@ This file contains the main FixedWingVehicle object class, FW_NLPerf_GuidanceSys
 
 1. Remove ideal equations of motion solver from guidance system to allow for any aircraft state solution
 2. Rename for deployment
-
-### Future Developments
-
-This project will go public once the algorithms are completed and validated. At that time, the name of the project will be updated to its final working title. Current target date: 13 OCT
+3. Output coordinates/altitude for import into Google Earth
