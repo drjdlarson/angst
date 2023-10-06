@@ -1,4 +1,4 @@
-# FW_UAV_GNC
+# FixedWing_NAPS
 
 <!-- <a href="https://join.slack.com/t/ngc-goz8665/shared_invite/zt-r01kumfq-dQUT3c95BxEP_fnk4yJFfQ">
 <img alt="Join us on Slack" src="https://raw.githubusercontent.com/netlify/netlify-cms/master/website/static/img/slack.png" width="165"/>
@@ -13,9 +13,9 @@
 
 ### Description
 
-The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWingUAV_Control.py and a utils.py script which contains utility functions for the FixedWingUAV_Control.py script.
+The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWing_NAPS.py and a utils.py script which contains utility functions for the FixedWingUAV_Control.py script.
 
-### FixedWingUAV_Control.py
+### FixedWing_NAPS.py
 
 This file contains the main FixedWingVehicle object class, FW_NLPerf_GuidanceSystem object class, and a simple function for running the FW_NLPerf_GuidanceSystem over a designated amount of time.
 
@@ -31,7 +31,7 @@ This file contains the main FixedWingVehicle object class, FW_NLPerf_GuidanceSys
 
 ### Current Tasks:
 
-1. Documentation
+1. Remove ideal equations of motion solver from guidance system to allow for any aircraft state solution
 2. Rename for deployment
 
 ### Future Developments
