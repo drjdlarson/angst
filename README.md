@@ -13,7 +13,7 @@
 
 ### Description
 
-The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWingUAV_Control.py, a developer sandbox, a wgs84.py script for use in calculating Earth approximations (not yet implemented), and a utils.py script which contains useful functions.
+The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. It includes the main python script FixedWingUAV_Control.py and a utils.py script which contains utility functions for the FixedWingUAV_Control.py script.
 
 ### FixedWingUAV_Control.py
 
@@ -29,9 +29,10 @@ This file contains the main FixedWingVehicle object class, FW_NLPerf_GuidanceSys
 6. Finally, you can graph the results of the simulation by running utils.plotSim() and passing it the FW_NLPerf_GuidanceSystem object.
     NOTE: If you have already run a simulation and saved the resulting FW_NLPerf_GuidanceSystem object to a .pkl file, you can load the .pkl file into an object of class FW_NLPerf_GuidanceSystem by running utils.load_obj() and passing it the filepath.
 
-### Current Problem:
+### Current Tasks:
 
-The FW_NLPerf_GuidanceSystem algorithms are not currently functioning as required. Troubleshooting is on-going.
+1. Documentation
+2. Rename for deployment
 
 ### Future Developments
 
