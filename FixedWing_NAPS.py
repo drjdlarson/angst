@@ -1,15 +1,17 @@
 #!/usr/bin/env python
-""" Non-Linear Fixed-Wing UAV Control
-        (Based on work from Dr. John Schierman)
+""" Fixed Wing (N)onlinear (A)ircraft - (P)erformance (S)imulation
+        The algorithms followed for the nonlinear controller are described in the case study for a
+        Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook.
+        This project is a nonlinear controller for a fixed-wing aircraft.
         This code will allow one to model a rigid aircraft operating in steady winds.
-        The aircraft will be guided via nonlinear feedback laws to follow profiles:
+        The aircraft will be guided via nonlinear feedback laws to follow a specified flight profile:
             - Commanded velocities
             - Commanded rates of climb/descent
             - Commanded headings
-        The attitude dynamics of the vehicle will be approximated.
+        In the current implementation, the attitude dynamics of the vehicle are approximated using ideal equations of motion.
 """
 __author__ = "Alex Springer"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
@@ -20,6 +22,7 @@ import utils
 
 class FixedWingVehicle:
     """Implements the base vehicle.
+
     This class allows the user to define the physical model of an aircraft to be used
         as an object of the FixedWingVehicle class.
     The default aircraft parameters, set to np.nan upon unitilization unless specified, are:
@@ -93,25 +96,36 @@ class FixedWingVehicle:
             self.__setattr__(param, params.get(param))
 
 
-class FW_NLPerf_GuidanceSystem:
-    """ Fixed-Wing Nonlinear Performance Guidance System
-    TODO:
-        After algorithm implementation, change the following:
-        m -> mass
-        v_BN_W_c -> V_veh_c
-        v_BN_W -> V_veh
-        sigma_c -> heading_c (or psi_c)
-        sigma -> heading (or psi)
+class FW_NL_GuidanceSystem:
+    """ Fixed-Wing Nonlinear Guidance System
+
+    (!!) FUTURE VERSIONS WILL NOT APPROXIMATE AIRCRAFT RESPONSE. USER WILL HAVE TO RUN GUIDANCE SYSTEM THROUGH
+        ANY EQUATIONS OF MOTION DEEMED APPROPRIATE. THE IDEAL EOM FROM THIS OBJECT WILL BE BROKEN OUT INTO
+        ITS OWN CLASS. (!!)
+
+    Note that fuel rate (FixedWingVehicle) mdot is not currently used.
+
+    The FW_NL_GuidanceSystem algorithm involves the following steps:
+    1. Guidance System - Generates guidance commands for the aircraft
+        a. Thrust Guidance System
+        b. Lift Guidance System
+        c. Heading Guidance System
+    2. Equations of Motion (EOM) System - Approximates aircraft responses to guidance system
+        a. Aerodynamic Response
+        b. Fuel Burn Response
+        c. Motion Response
+        d. Airspeed Response
+        e. Conversion to Earth-Centered, Earth-Fixed (ECEF) Response
 
     Guidance System inputs:
         m           mass of the aircraft
-        v_BN_W_c    Commanded inertial velocity
-        v_BN_W      Current inertial velocity (output from EOM)
-        gamma_c     Commanded flight path angle
-        gamma       Current flight path angle (output from EOM)
-        airspeed    Current airspeed (output from EOM)
-        sigma_c     Commanded heading angle clockwise from North
-        sigma       Current heading angle clockwise from North (output from EOM)
+        v_BN_W_c    commanded inertial velocity
+        v_BN_W      current inertial velocity (output from EOM)
+        gamma_c     commanded flight path angle
+        gamma       current flight path angle (output from EOM)
+        airspeed    current airspeed (output from EOM)
+        sigma_c     commanded heading angle clockwise from North
+        sigma       current heading angle clockwise from North (output from EOM)
 
     Guidance System outputs:
         thrust      magnitude of thrust vector in line with aircraft body
@@ -119,6 +133,23 @@ class FW_NLPerf_GuidanceSystem:
         alpha_c     angle of attack commanded by guidance system (unused in EOM)
         mu          wind-axes bank angle (phi_w in textbook)
         h_c         commanded height of aircraft (? - unused in EOM)
+
+    EOM inputs:
+        thrust      thrust command
+        lift        lift command
+        mu          wind-axes bank angle command
+
+    EOM outputs:
+        m           mass following fuel burn
+        v_BN_W      inertial velocity
+        gamma       flight path angle
+        sigma       heading angle clockwise from North
+        lat         latitude
+        lon         longitude
+        h           altitude
+        airspeed    airspeed
+        alpha       angle of attack response
+        drag        drag force
 
     Guidance System assumptions:
         a. Air mass (wind) uniformly translating w.r.t. Earth-fixed inertial frame
@@ -213,6 +244,19 @@ class FW_NLPerf_GuidanceSystem:
             self.airspeed_history.append(self.airspeed)
 
     def setCommandTrajectory(self, velocity, flight_path_angle, heading):
+        """ Set a user-defined commanded aircraft trajectory
+        
+        The trajectory set using this command will come into effect on the next iteration of the guidance system.
+
+        Parameters
+        ----------
+        velocity : :float:`(feet per second) The commanded forward velocity of the aircraft.`
+            Use this command to set the forward airspeed of the aircraft.
+        flight_path_angle : :float:`(radians) The commanded flight path angle of the aircraft.`
+            The flight path angle is the angle at which the aircraft is either climbing (+) or descending (-)
+        heading : :float:`(radians) The commanded heading of the aircraft.`
+            The heading of the aircraft is defined as clockwise from North.
+        """
         # Set the new user command
         self.command.v_BN_W = velocity  # Commanded velocity
         self.command.gamma = flight_path_angle  # Commanded flight path angle
@@ -225,6 +269,12 @@ class FW_NLPerf_GuidanceSystem:
         self.sigma_err = self.command.sigma - self.sigma[-1]
 
     def stepTime(self, dt=None):
+        """ Proceed one time step forward in the simulation.
+        
+        Parameters
+        ----------
+        dt : :float:`Optional. Time step value.
+        """
         if dt is None:
             dt = self.dt
         self.getGuidanceCommands(dt)
@@ -235,31 +285,16 @@ class FW_NLPerf_GuidanceSystem:
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
         Note: Be sure to check the current vehicle units via:
-            > [FW_NLPerf_GuidanceSystem].Vehicle.units
-            > [FW_NLPerf_GuidanceSystem].Vehicle.angles
+            > [FW_NL_GuidanceSystem].Vehicle.units
+            > [FW_NL_GuidanceSystem].Vehicle.angles
             **At the initialization of the guidance system, the units of the vehicle were inherited.
                 However, it is recommended to check the current guidance system units as well:
-                > [FW_NLPerf_GuidanceSystem].units
-                > [FW_NLPerf_GuidanceSystem].angles
+                > [FW_NL_GuidanceSystem].units
+                > [FW_NL_GuidanceSystem].angles
 
         Parameters
         ----------
-        Inputs:
-
-        m : float
-            Current mass of the aircraft.
-        v_BN_W : float
-            Current inertial velocity of the aircraft.
-        gamma : float
-            Current flight path angle of the aircraft.
-        airspeed : float
-            Current airspeed of the aircraft.
-        sigma : float
-            Current heading angle of the aircraft.
-
-        Outputs:
-
-
+        dt : :float:`Optional. Time step value.
         """
         if np.nan in [self.command.v_BN_W, self.command.gamma, self.command.sigma]:
             print('Unable to get Guidance commands because no User Trajectory Command has been set.')
@@ -273,6 +308,15 @@ class FW_NLPerf_GuidanceSystem:
         self._headingGuidanceSystem(dt)
 
     def getEquationsOfMotion_Ideal(self, dt=None):
+        """ An ideal equations of motion solver for a rigid body fixed-wing aircraft.
+        In future versions, this will be removed and the user will solve the EOM. The user
+        will then have to provide the responses of the aircraft back to the guidance system
+        after each time step.
+
+        Parameters
+        ----------
+        dt : :float:`Optional. Time step value.
+        """
         if dt is None:
             dt = self.dt
 
@@ -458,7 +502,7 @@ def run_FW_UAV_GNC_Test(stopTime, loadSimulationFilePath=None, saveSimulationFil
 
         # Build the guidance system using the aircraft object and control system transfer function constants
         with utils.Timer('build_GuidanceSystem_obj'):
-            acft_Guidance = FW_NLPerf_GuidanceSystem(my_acft, TF_constants, init_cond)
+            acft_Guidance = FW_NL_GuidanceSystem(my_acft, TF_constants, init_cond)
         
         with utils.Timer('run_FW_UAV_GNC_Test'):
             while acft_Guidance.time[-1] < stopTime:
