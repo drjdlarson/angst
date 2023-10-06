@@ -32,5 +32,8 @@ This file contains the main FixedWingVehicle object class, FW_NLPerf_GuidanceSys
 ### Current Tasks:
 
 1. Remove ideal equations of motion solver from guidance system to allow for any aircraft state solution
-2. Rename for deployment
+2. Rename for deployment (currently accepting suggestions)
+    Current options:
+       a. (F)ixed Wing (A)ircraft (N)onlinear (G)uidance (S)ystem - FANGS
+       b. ??
 3. Output coordinates/altitude for import into Google Earth
