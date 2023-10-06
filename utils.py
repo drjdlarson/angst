@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import wgs84
 import pickle
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 
 # Constants
@@ -418,7 +419,7 @@ def load_obj(filepath):
         return pickle.load(loadpath)
 
 
-def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None):
+def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPlots=False):
     acft_Guidance = simulation_guidance_object
 
     # Plot results (groundspeed)
@@ -432,15 +433,20 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None):
     ax_gndspd.set_ylabel('Groundspeed (mph)')
     ax_gndspd.legend()
     ax_gndspd.grid(visible='True')
+    ax_gndspd.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
 
     # Plot results (airspeed)
     fig_airspd, ax_airspd = plt.subplots(1)
     v_airspeed_mph = [x*fps2mph for x in acft_Guidance.airspeed]
-    ax_airspd.plot(acft_Guidance.time, v_airspeed_mph)
+    # v_airspeed_c_mph = [x*fps2mph for x in acft_Guidance.command.airspeed_history]
+    ax_airspd.plot(acft_Guidance.time, v_airspeed_mph, label='Response')
+    # ax_airspd.plot(acft_Guidance.time, v_airspeed_c_mph, label='Commanded')
     ax_airspd.set_title('Airspeed Response')
     ax_airspd.set_xlabel('Time (s)')
     ax_airspd.set_ylabel('Airspeed (mph)')
+    ax_airspd.legend()
     ax_airspd.grid(visible='True')
+    ax_airspd.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
 
     # Plot results (flight path angle)
     fig_fltpth, ax_fltpth = plt.subplots(1)
@@ -523,19 +529,19 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None):
     if saveFolder is not None:
         if filePrefix is None:
             filePrefix = ''
-        fig_gndspd.savefig(saveFolder+'\\'+filePrefix+'_gndspd.png')
-        fig_airspd.savefig(saveFolder+'\\'+filePrefix+'_airspd.png')
-        fig_fltpth.savefig(saveFolder+'\\'+filePrefix+'_fltpth.png')
-        fig_hdg.savefig(saveFolder+'\\'+filePrefix+'_hdg.png')
-        fig_aoa.savefig(saveFolder+'\\'+filePrefix+'_aoa.png')
-        fig_hgt.savefig(saveFolder+'\\'+filePrefix+'_hgt.png')
-        fig_coords.savefig(saveFolder+'\\'+filePrefix+'_coords.png')
-        fig_forces.savefig(saveFolder+'\\'+filePrefix+'_forces.png')
-        fig_bank.savefig(saveFolder+'\\'+filePrefix+'_bank.png')
+        with Timer('save_figures'):
+            fig_gndspd.savefig(saveFolder+'\\'+filePrefix+'gndspd.png')
+            fig_airspd.savefig(saveFolder+'\\'+filePrefix+'airspd.png')
+            fig_fltpth.savefig(saveFolder+'\\'+filePrefix+'fltpth.png')
+            fig_hdg.savefig(saveFolder+'\\'+filePrefix+'hdg.png')
+            fig_aoa.savefig(saveFolder+'\\'+filePrefix+'aoa.png')
+            fig_hgt.savefig(saveFolder+'\\'+filePrefix+'hgt.png')
+            fig_coords.savefig(saveFolder+'\\'+filePrefix+'coords.png')
+            fig_forces.savefig(saveFolder+'\\'+filePrefix+'forces.png')
+            fig_bank.savefig(saveFolder+'\\'+filePrefix+'bank.png')
 
     # Show plots
-    else:
-        plt.show()
+    if showPlots: plt.show()
 
     
 

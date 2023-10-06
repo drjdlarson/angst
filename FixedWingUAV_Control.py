@@ -9,7 +9,7 @@
         The attitude dynamics of the vehicle will be approximated.
 """
 __author__ = "Alex Springer"
-__version__ = "0.0.1"
+__version__ = "1.0.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
@@ -167,9 +167,6 @@ class FW_NLPerf_GuidanceSystem:
         self.weight = [InitialConditions['weight']]
         self.mass = [self.weight[0]/utils.const_gravity]
         self.airspeed = [utils.wind_vector(self.v_BN_W[0], self.gamma[0], self.sigma[0])]
-        self.alpha = [0]
-        self.drag = [0]
-        self.mu = [0]
 
         # Set vehicle GNC initiation time
         self.time = [time]
@@ -193,6 +190,11 @@ class FW_NLPerf_GuidanceSystem:
         self.h_c = [0]
         self.sigma_err = 0
 
+        # Calculate initial alpha, drag, and mu
+        self.alpha = [self._calculateAlpha()]
+        self.drag = [self._calculateDrag()]
+        self.mu = [self._calculateMu()]
+
     class userCommand:
         def __init__(self, v_BN_W, gamma, sigma):
             self.v_BN_W = v_BN_W
@@ -201,17 +203,26 @@ class FW_NLPerf_GuidanceSystem:
             self.v_BN_W_history = [v_BN_W]
             self.gamma_history = [gamma]
             self.sigma_history = [sigma]
+            self.airspeed = utils.wind_vector(v_BN_W, gamma, sigma)
+            self.airspeed_history = [self.airspeed]
         
         def save_history(self):
             self.v_BN_W_history.append(self.v_BN_W)
             self.gamma_history.append(self.gamma)
             self.sigma_history.append(self.sigma)
+            self.airspeed_history.append(self.airspeed)
 
-    def setCommandTrajectory(self, velocity, rate_of_climb, heading):
+    def setCommandTrajectory(self, velocity, flight_path_angle, heading):
         # Set the new user command
         self.command.v_BN_W = velocity  # Commanded velocity
-        self.command.gamma = np.arcsin(rate_of_climb/velocity)  # Commanded flight path angle
+        self.command.gamma = flight_path_angle  # Commanded flight path angle
         self.command.sigma = heading  # Commanded heading
+        self.command.airspeed = utils.wind_vector(self.command.v_BN_W, self.command.gamma, self.command.sigma)
+
+        # Update errors
+        self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
+        self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
+        self.sigma_err = self.command.sigma - self.sigma[-1]
 
     def stepTime(self, dt=None):
         if dt is None:
@@ -256,12 +267,10 @@ class FW_NLPerf_GuidanceSystem:
 
         if dt is None:
             dt = self.dt
-        thrust_c, thrust = self._thrustGuidanceSystem(dt)
-        lift, alpha_c, h_c = self._liftGuidanceSystem(dt)
-        mu = self._headingGuidanceSystem(dt)
-        # print(f'Commanding thrust: {thrust_c} lbf, resulting in {thrust} lbf thrust')
-        # print(f'Commanding lift: {lift} lbf, by setting angle of attack to {alpha_c} and altitude to {h_c}')
-        # print(f'Commanding wind-axes bank angle: {mu}')
+
+        self._thrustGuidanceSystem(dt)
+        self._liftGuidanceSystem(dt)
+        self._headingGuidanceSystem(dt)
 
     def getEquationsOfMotion_Ideal(self, dt=None):
         if dt is None:
@@ -272,8 +281,8 @@ class FW_NLPerf_GuidanceSystem:
         self.mass.append(sol.y[-1][-1])
 
         # Calculate alpha and drag
-        a = ((2*self.Lift[-1]) / (utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2)) + self.Vehicle.alpha_o
-        d = 0.5 * utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Do * self.airspeed[-1]**2
+        a = self._calculateAlpha()
+        d = self._calculateDrag()
         self.alpha.append(a)
         self.drag.append(d)
 
@@ -359,7 +368,7 @@ class FW_NLPerf_GuidanceSystem:
         # NOTE mu in code equals Phi_W in book (wind-axes bank angle)
         # NOTE sigma in code equals Psi_W in book (heading)
         self.sigma_err = self.command.sigma - self.sigma[-1]
-        mu = self.K_mu_p*(self.command.v_BN_W / utils.const_gravity) * self.sigma_err
+        mu = self._calculateMu()
 
         if np.abs(mu) > self.Vehicle.mu_max:
             print(f'Command bank angle {mu} exceeds max allowable bank angle |{self.Vehicle.mu_max}|')
@@ -368,6 +377,15 @@ class FW_NLPerf_GuidanceSystem:
         self.mu.append(mu)
 
         return mu
+
+    def _calculateAlpha(self):
+        return ((2*self.Lift[-1]) / (utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2)) + self.Vehicle.alpha_o
+
+    def _calculateDrag(self):
+        return 0.5 * utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Do * self.airspeed[-1]**2 + (2 * self.Lift[-1]**2) / (utils.const_density * self.Vehicle.wing_area * np.pi * self.Vehicle.aspect_ratio * self.Vehicle.wing_eff * self.airspeed[-1]**2)
+
+    def _calculateMu(self):
+        return self.K_mu_p*(self.command.v_BN_W / utils.const_gravity) * self.sigma_err
 
     def __xT_dot_ode(self, t, xT=0): return self.mass[-1] * self.V_err
 
@@ -381,9 +399,9 @@ class FW_NLPerf_GuidanceSystem:
 
     def __eom_ode(self, t, y0):
         # y0 = [v_BN_W, gamma, sigma]
-        v_BN_W_dot = ((self.Thrust[-1] - self.drag[-1]) / self.mass[-1]) - utils.const_gravity * self.gamma[-1]
-        gamma_dot = (1/self.v_BN_W[-1]) * ((self.Lift[-1] * np.cos(self.mu[-1]/self.mass[-1]) - utils.const_gravity * np.cos(self.gamma[-1])))
-        sigma_dot = (1/(self.v_BN_W[-1] * np.cos(self.gamma[-1]))) * (self.Lift[-1] * np.sin(self.mu[-1] / self.mass[-1]))
+        v_BN_W_dot = ((self.Thrust[-1] - self.drag[-1]) / self.mass[-1]) - utils.const_gravity * np.sin(self.gamma[-1])
+        gamma_dot = (1/self.v_BN_W[-1]) * ((self.Lift[-1] * np.cos(self.mu[-1])/self.mass[-1]) - utils.const_gravity * np.cos(self.gamma[-1]))
+        sigma_dot = (1/(self.v_BN_W[-1] * np.cos(self.gamma[-1]))) * (self.Lift[-1] * np.sin(self.mu[-1]) / self.mass[-1])
         return [v_BN_W_dot, gamma_dot, sigma_dot]
 
     def __ecef_ode(self, t, y0):
@@ -394,28 +412,32 @@ class FW_NLPerf_GuidanceSystem:
         return [lat_dot, lon_dot, h_dot]
 
 
-def run_FW_UAV_GNC_Test(stopTime, plotResults=False, runSim=True, saveSim=False):
-    filepath = r'.\saved_simulations\1step_run_FW_UAV_GNC_test_C130.pkl'
-    # Run simulation
-    if runSim:
+def run_FW_UAV_GNC_Test(stopTime, loadSimulationFilePath=None, saveSimulationFilePath=None, saveFiguresFolderPath=None):
+    # If a previously-run simulation .pkl file is supplied, load that instead of running a new simulation.
+    if loadSimulationFilePath is not None:
+        print(f'Loading saved simulation data from <{loadSimulationFilePath}>')
+        acft_Guidance = utils.load_obj(loadSimulationFilePath)
+
+    # Otherwise, run a simulation and save the results to a .pkl file if a saveSimulationFilePath is given.
+    else:
         # Define the aircraft (example aircraft is C-130)
         new_aircraft_parameters = {'weight_max': 327000,
-                                'weight_min': 157000,
-                                'speed_max': 600 * utils.mph2fps,
-                                'speed_min': 200 * utils.mph2fps,
-                                'Kf': 4e-6,
-                                'omega_T': 2,
-                                'omega_L': 2.5,
-                                'omega_mu': 1,
-                                'T_max': 72000,
-                                'K_Lmax': 2.6,
-                                'mu_max': 30 * utils.d2r,
-                                'C_Do': 0.0183,
-                                'C_Lalpha': 0.0920 / utils.d2r,
-                                'alpha_o': -0.05 * utils.d2r,
-                                'wing_area': 1745,
-                                'aspect_ratio': 10.1,
-                                'wing_eff': 0.613}
+                                   'weight_min': 157000,
+                                   'speed_max': 600 * utils.mph2fps,
+                                   'speed_min': 200 * utils.mph2fps,
+                                   'Kf': 4e-6,
+                                   'omega_T': 2,
+                                   'omega_L': 2.5,
+                                   'omega_mu': 1,
+                                   'T_max': 72000,
+                                   'K_Lmax': 2.6,
+                                   'mu_max': 30 * utils.d2r,
+                                   'C_Do': 0.0183,
+                                   'C_Lalpha': 0.0920 / utils.d2r,
+                                   'alpha_o': -0.05 * utils.d2r,
+                                   'wing_area': 1745,
+                                   'aspect_ratio': 10.1,
+                                   'wing_eff': 0.613}
 
         # Build the aircraft object
         with utils.Timer('build_acft_obj'):
@@ -437,31 +459,31 @@ def run_FW_UAV_GNC_Test(stopTime, plotResults=False, runSim=True, saveSim=False)
         # Build the guidance system using the aircraft object and control system transfer function constants
         with utils.Timer('build_GuidanceSystem_obj'):
             acft_Guidance = FW_NLPerf_GuidanceSystem(my_acft, TF_constants, init_cond)
-
-        # Give the aircraft a command
-        # velocity = 450 mph
-        # rate_of_climb = 5 degrees
-        # heading = 15 degrees (NNE)
-        acft_Guidance.setCommandTrajectory(450 * utils.mph2fps, 5 * utils.d2r, 15 * utils.d2r)
+        
         with utils.Timer('run_FW_UAV_GNC_Test'):
             while acft_Guidance.time[-1] < stopTime:
+                if acft_Guidance.time[-1] >= 1 and acft_Guidance.time[-2] < 1:
+                    # Give the aircraft a command
+                    # velocity = 450 mph
+                    # rate_of_climb = 5 degrees
+                    # heading = 15 degrees (NNE)
+                    acft_Guidance.setCommandTrajectory(450 * utils.mph2fps, 5 * utils.d2r, 15 * utils.d2r)
                 acft_Guidance.stepTime()
-        if saveSim:
+
+        if saveSimulationFilePath is not None:
             with utils.Timer('save_obj'):
-                utils.save_obj(acft_Guidance, filepath)
+                utils.save_obj(acft_Guidance, saveSimulationFilePath)
 
-    # Load prior simulation
+    # Show/save the plots from the simulation
+    if saveFiguresFolderPath is None:
+        utils.plotSim(acft_Guidance)
     else:
-        print(f'Loading saved simulation data from <{filepath}>')
-        acft_Guidance = utils.load_obj(filepath)
+        utils.plotSim(acft_Guidance, saveFolder=saveFiguresFolderPath, showPlots=False)
 
-    if plotResults:
-        utils.plotSim(acft_Guidance, saveFolder=r'.\saved_simulations\figures', filePrefix='1stepC130')
-    
     return
 
 
 if __name__ == '__main__':
-    # Run through simulation
-    run_FW_UAV_GNC_Test(120, plotResults=True, runSim=False)
-    # run_FW_UAV_GNC_Test(0.01, plotResults=True, runSim=True, saveSim=True)  # DON'T FORGET TO CHANGE THE FILENAME
+    # Run through simulation -- Note that commands are set at 1s
+    # run_FW_UAV_GNC_Test(120, loadSimulationFilePath=r'.\saved_simulations\120s_C130_1s_command_run_FW_UAV_GNC_test_C130.pkl', saveFiguresFolderPath=r'.\saved_simulations\figures\120 second C130 simulation')
+    run_FW_UAV_GNC_Test(600, saveSimulationFilePath=r'.\saved_simulations\600s_C130_1s_command_run_FW_UAV_GNC_test_C130.pkl', saveFiguresFolderPath=r'.\saved_simulations\figures\600 second C130 simulation')
