@@ -418,7 +418,7 @@ def load_obj(filepath):
         return pickle.load(loadpath)
 
 
-def plotSim(simulation_guidance_object):
+def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None):
     acft_Guidance = simulation_guidance_object
 
     # Plot results (groundspeed)
@@ -519,8 +519,26 @@ def plotSim(simulation_guidance_object):
     ax_bank.set_ylabel('Bank Angle (deg)')
     ax_bank.grid(visible='True')
 
+    # Save plots
+    if saveFolder is not None:
+        if filePrefix is None:
+            filePrefix = ''
+        fig_gndspd.savefig(saveFolder+'\\'+filePrefix+'_gndspd.png')
+        fig_airspd.savefig(saveFolder+'\\'+filePrefix+'_airspd.png')
+        fig_fltpth.savefig(saveFolder+'\\'+filePrefix+'_fltpth.png')
+        fig_hdg.savefig(saveFolder+'\\'+filePrefix+'_hdg.png')
+        fig_aoa.savefig(saveFolder+'\\'+filePrefix+'_aoa.png')
+        fig_hgt.savefig(saveFolder+'\\'+filePrefix+'_hgt.png')
+        fig_coords.savefig(saveFolder+'\\'+filePrefix+'_coords.png')
+        fig_forces.savefig(saveFolder+'\\'+filePrefix+'_forces.png')
+        fig_bank.savefig(saveFolder+'\\'+filePrefix+'_bank.png')
+
     # Show plots
-    plt.show()
+    else:
+        plt.show()
+
+    
+
 
 
 @contextmanager

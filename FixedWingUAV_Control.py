@@ -394,8 +394,8 @@ class FW_NLPerf_GuidanceSystem:
         return [lat_dot, lon_dot, h_dot]
 
 
-def run_FW_UAV_GNC_Test(stopTime, plotResults=False, runSim=True):
-    filepath = r'.\saved_simulations\run_FW_UAV_GNC_test_C130.pkl'
+def run_FW_UAV_GNC_Test(stopTime, plotResults=False, runSim=True, saveSim=False):
+    filepath = r'.\saved_simulations\1step_run_FW_UAV_GNC_test_C130.pkl'
     # Run simulation
     if runSim:
         # Define the aircraft (example aircraft is C-130)
@@ -446,7 +446,9 @@ def run_FW_UAV_GNC_Test(stopTime, plotResults=False, runSim=True):
         with utils.Timer('run_FW_UAV_GNC_Test'):
             while acft_Guidance.time[-1] < stopTime:
                 acft_Guidance.stepTime()
-            utils.save_obj(acft_Guidance, filepath)
+        if saveSim:
+            with utils.Timer('save_obj'):
+                utils.save_obj(acft_Guidance, filepath)
 
     # Load prior simulation
     else:
@@ -454,7 +456,7 @@ def run_FW_UAV_GNC_Test(stopTime, plotResults=False, runSim=True):
         acft_Guidance = utils.load_obj(filepath)
 
     if plotResults:
-        utils.plotSim(acft_Guidance)
+        utils.plotSim(acft_Guidance, saveFolder=r'.\saved_simulations\figures', filePrefix='1stepC130')
     
     return
 
@@ -462,4 +464,4 @@ def run_FW_UAV_GNC_Test(stopTime, plotResults=False, runSim=True):
 if __name__ == '__main__':
     # Run through simulation
     run_FW_UAV_GNC_Test(120, plotResults=True, runSim=False)
-    # run_FW_UAV_GNC_Test(120, plotResults=False, runSim=True)
+    # run_FW_UAV_GNC_Test(0.01, plotResults=True, runSim=True, saveSim=True)  # DON'T FORGET TO CHANGE THE FILENAME
