@@ -13,7 +13,7 @@
         b. Import state data from a state estimator
 """
 __author__ = "Alex Springer"
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
