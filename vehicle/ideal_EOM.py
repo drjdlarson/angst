@@ -121,7 +121,7 @@ def __eom_ode(t, state, thrust, lift, drag, mass, mu):
     v_BN_W_dot = ((thrust - drag) / mass) - utils.const_gravity * np.sin(gamma)
     gamma_dot = (1/v_BN_W) * ((lift * np.cos(mu)/mass) - utils.const_gravity * np.cos(gamma))
     sigma_dot = (1/(v_BN_W * np.cos(gamma))) * (lift * np.sin(mu) / mass)
-    return (v_BN_W_dot, gamma_dot, sigma_dot)
+    return [v_BN_W_dot, gamma_dot, sigma_dot]
 
 def __ecef_ode(t, state, v_BN_W, gamma, sigma):
     lat, lon, h = state  # Unpack the state
