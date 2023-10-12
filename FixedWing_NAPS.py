@@ -69,6 +69,7 @@ def run_FW_UAV_GNC_Test(stopTime, loadSimulationFilePath=None, saveSimulationFil
         with utils.Timer('build_GuidanceSystem_obj'):
             acft_Guidance = GuidanceSystem(my_acft, TF_constants, init_cond)
         
+        ii = 0
         with utils.Timer('run_FW_UAV_GNC_Test'):
             while acft_Guidance.time[-1] < stopTime:
                 if acft_Guidance.time[-1] >= 1 and acft_Guidance.command.time == 0:
@@ -78,9 +79,23 @@ def run_FW_UAV_GNC_Test(stopTime, loadSimulationFilePath=None, saveSimulationFil
                     # heading = 15 degrees (NNE)
                     acft_Guidance.setCommandTrajectory(450 * utils.mph2fps, 5 * utils.d2r, 15 * utils.d2r)
                 acft_Guidance.getGuidanceCommands()
-                new_state = RBFW(acft_Guidance.Vehicle, acft_Guidance.Thrust[-1], acft_Guidance.Lift[-1], acft_Guidance.alpha_c, acft_Guidance.mu, acft_Guidance.h_c, acft_Guidance.v_BN_W[-1], acft_Guidance.gamma[-1], acft_Guidance.sigma[-1], acft_Guidance.mass[-1], acft_Guidance.airspeed[-1], acft_Guidance.lat[-1], acft_Guidance.lon[-1], acft_Guidance.h[-1], acft_Guidance.time[-1], acft_Guidance.dt)
+
+                """ Use this line to estimate state using the built-in default ideal EOM solver """
+                # acft_Guidance.updateSystemState()
+
+                """ Use these lines to import externally-calculated EOM (vehicle.ideal_EOM.ideal_EOM.RBFW)"""
+                new_state = RBFW(acft_Guidance.Vehicle, acft_Guidance.Thrust[-1], acft_Guidance.Lift[-1], acft_Guidance.alpha_c, acft_Guidance.mu[-1], acft_Guidance.h_c, acft_Guidance.v_BN_W[-1], acft_Guidance.gamma[-1], acft_Guidance.sigma[-1], acft_Guidance.mass[-1], acft_Guidance.airspeed[-1], acft_Guidance.lat[-1], acft_Guidance.lon[-1], acft_Guidance.h[-1], acft_Guidance.time[-1], acft_Guidance.dt)
                 mass, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag = new_state
                 acft_Guidance.updateSystemState(mass=mass, v_BN_W=v_BN_W, gamma=gamma, sigma=sigma, lat=lat, lon=lon, h=h, airspeed=airspeed, alpha=alpha, drag=drag)
+
+                """ Testing toggle-ability of built-in default ideal EOM solver """
+                # if ii%2 == 0:
+                #     acft_Guidance.updateSystemState()
+                # else:
+                #     new_state = RBFW(acft_Guidance.Vehicle, acft_Guidance.Thrust[-1], acft_Guidance.Lift[-1], acft_Guidance.alpha_c, acft_Guidance.mu[-1], acft_Guidance.h_c, acft_Guidance.v_BN_W[-1], acft_Guidance.gamma[-1], acft_Guidance.sigma[-1], acft_Guidance.mass[-1], acft_Guidance.airspeed[-1], acft_Guidance.lat[-1], acft_Guidance.lon[-1], acft_Guidance.h[-1], acft_Guidance.time[-1], acft_Guidance.dt)
+                #     mass, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag = new_state
+                #     acft_Guidance.updateSystemState(mass=mass, v_BN_W=v_BN_W, gamma=gamma, sigma=sigma, lat=lat, lon=lon, h=h, airspeed=airspeed, alpha=alpha, drag=drag)
+                # ii += 1
 
         if saveSimulationFilePath is not None:
             with utils.Timer('save_obj'):
