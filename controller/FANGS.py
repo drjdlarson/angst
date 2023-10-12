@@ -3,13 +3,14 @@
         The algorithms followed for the nonlinear controller are described in the case study for a
         Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook.
         This project is a nonlinear controller for a fixed-wing aircraft.
-        This code will allow one to model a rigid aircraft operating in steady winds.
         The aircraft will be guided via nonlinear feedback laws to follow a specified flight profile:
             - Commanded velocities
             - Commanded rates of climb/descent
             - Commanded headings
-        In the current implementation, the attitude dynamics of the vehicle are approximated using ideal equations of motion.
-            TODO: Break EOMs out to separate functionality
+
+    At each time step, the guidance system will be updated with commands. The user must then either:
+        a. Import state data from measurements
+        b. Import state data from a state estimator
 """
 __author__ = "Alex Springer"
 __version__ = "1.0.1"
@@ -23,25 +24,10 @@ import controller.utils as utils
 class GuidanceSystem:
     """ Fixed-Wing Nonlinear Guidance System
 
-    (!!) FUTURE VERSIONS WILL NOT APPROXIMATE AIRCRAFT RESPONSE.
-    USER WILL HAVE TO RUN GUIDANCE SYSTEM THROUGH
-    ANY EQUATIONS OF MOTION DEEMED APPROPRIATE.
-    THE IDEAL EOM FROM THIS OBJECT WILL BE BROKEN OUT INTO ITS OWN CLASS.
-    (!!)
-
-    Note that fuel rate (FixedWingVehicle) mdot is not currently used.
-
-    The FW_NL_GuidanceSystem algorithm involves the following steps:
-    1. Guidance System - Generates guidance commands for the aircraft
+    The FW_NL_GuidanceSystem algorithm - Generates guidance commands for the aircraft
         a. Thrust Guidance System
         b. Lift Guidance System
         c. Heading Guidance System
-    2. Equations of Motion (EOM) System - Approximates aircraft responses to guidance system
-        a. Aerodynamic Response
-        b. Fuel Burn Response
-        c. Motion Response
-        d. Airspeed Response
-        e. Conversion to Earth-Centered, Earth-Fixed (ECEF) Response
 
     Guidance System inputs:
         m           mass of the aircraft
@@ -59,23 +45,6 @@ class GuidanceSystem:
         alpha_c     angle of attack commanded by guidance system (unused in EOM)
         mu          wind-axes bank angle (phi_w in textbook)
         h_c         commanded height of aircraft (? - unused in EOM)
-
-    EOM inputs:
-        thrust      thrust command
-        lift        lift command
-        mu          wind-axes bank angle command
-
-    EOM outputs:
-        m           mass following fuel burn
-        v_BN_W      inertial velocity
-        gamma       flight path angle
-        sigma       heading angle clockwise from North
-        lat         latitude
-        lon         longitude
-        h           altitude
-        airspeed    airspeed
-        alpha       angle of attack response
-        drag        drag force
 
     Guidance System assumptions:
         a. Air mass (wind) uniformly translating w.r.t. Earth-fixed inertial frame
@@ -154,6 +123,7 @@ class GuidanceSystem:
 
     class userCommand:
         def __init__(self, v_BN_W, gamma, sigma):
+            self.time = 0
             self.v_BN_W = v_BN_W
             self.gamma = gamma
             self.sigma = sigma
@@ -194,19 +164,25 @@ class GuidanceSystem:
         self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
         self.sigma_err = self.command.sigma - self.sigma[-1]
 
-    def stepTime(self, dt=None):
-        """ Proceed one time step forward in the simulation.
+        # Update time since last command
+        self.command.time = self.time[-1]
+
+        # Annoy the user
+        # print(f'Setting the guidance command ({velocity}, {flight_path_angle}, {heading}) at time {self.command.time}')
+
+    # def stepTime(self, dt=None):
+    #     """ Proceed one time step forward in the simulation.
         
-        Parameters
-        ----------
-        dt : :float:`Optional. Time step value.
-        """
-        if dt is None:
-            dt = self.dt
-        self.getGuidanceCommands(dt)
-        self.getEquationsOfMotion_Ideal(dt)
-        self.command.save_history()
-        self.time.append(self.time[-1]+dt)
+    #     Parameters
+    #     ----------
+    #     dt : :float:`Optional. Time step value.
+    #     """
+    #     if dt is None:
+    #         dt = self.dt
+    #     self.getGuidanceCommands(dt)
+    #     self.getEquationsOfMotion_Ideal(dt)
+    #     self.command.save_history()
+    #     self.time.append(self.time[-1]+dt)
 
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
@@ -233,11 +209,46 @@ class GuidanceSystem:
         self._liftGuidanceSystem(dt)
         self._headingGuidanceSystem(dt)
 
-    def getEquationsOfMotion_Ideal(self, dt=None):
+    def updateSystemState(self, mass=None, v_BN_W=None, gamma=None, sigma=None, lat=None, lon=None, h=None, airspeed=None, alpha=None, drag=None, dt=None):
+        """ User-supplied state update before asking for next guidance system command.
+        If any states are left un-supplied, they will be estimated using an ideal equations of motion algorithm.
+    
+        Parameters
+        ----------
+        m : :float:`estimated aircraft mass following fuel burn`
+        v_BN_W : :float:`estimated aircraft inertial velocity response`
+        gamma : :float:`estimated flight path angle response`
+        sigma : :float:`estimated heading angle clockwise from North response`
+        lat : :float:`estimated aircraft latitude response`
+        lon : :float:`estimated aircraft longitude response`
+        h : :float:`estimated aircraft altitude response`
+        airspeed : :float:`estimated aircraft airspeed response`
+        alpha : :float:`estimated aircraft angle of attack response`
+        drag : :float:`estimated aircraft drag force response`
+        dt : :float:`Optional. Time step value.
+        """
+        if dt is None:
+            dt = self.dt
+        sys_states = (mass, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag)
+        if None in sys_states:
+            ideal_eom = self._getEquationsOfMotion_Ideal()
+            sys_states = [ideal_eom[i] if sys_states[i] is None else sys_states[i] for i in range(len(sys_states))]
+        self.mass.append(sys_states[0])
+        self.v_BN_W.append(sys_states[1])
+        self.gamma.append(sys_states[2])
+        self.sigma.append(sys_states[3])
+        self.lat.append(sys_states[4])
+        self.lon.append(sys_states[5])
+        self.h.append(sys_states[6])
+        self.airspeed.append(sys_states[7])
+        self.alpha.append(sys_states[8])
+        self.drag.append(sys_states[9])
+        self.time.append(self.time[-1] + dt)
+        self.command.save_history()
+
+    def _getEquationsOfMotion_Ideal(self, dt=None):
         """ An ideal equations of motion solver for a rigid body fixed-wing aircraft.
-        In future versions, this will be removed and the user will solve the EOM. The user
-        will then have to provide the responses of the aircraft back to the guidance system
-        after each time step.
+        This will be the default state solver for any updated system states the user does not supply at any time step.
 
         Parameters
         ----------
@@ -248,30 +259,30 @@ class GuidanceSystem:
 
         # Calculate fuel burn based on thrust
         sol = solve_ivp(self.__m_dot_ode, [self.time[-1], self.time[-1] + dt], [self.mass[-1]], method='RK45')
-        self.mass.append(sol.y[-1][-1])
+        mass = sol.y[-1][-1]
 
         # Calculate alpha and drag
-        a = self._calculateAlpha()
-        d = self._calculateDrag()
-        self.alpha.append(a)
-        self.drag.append(d)
+        alpha = self._calculateAlpha()
+        drag = self._calculateDrag()
 
         # Calculate v_BN_W, gamma, sigma
         y0 = [self.v_BN_W[-1], self.gamma[-1], self.sigma[-1]]
         sol = solve_ivp(self.__eom_ode, [self.time[-1], self.time[-1] + dt], y0, method='RK45')
-        self.v_BN_W.append(sol.y[0][-1])
-        self.gamma.append(sol.y[1][-1])
-        self.sigma.append(sol.y[2][-1])
+        v_BN_W = sol.y[0][-1]
+        gamma = sol.y[1][-1]
+        sigma = sol.y[2][-1]
 
         # Calculate airspeed
-        self.airspeed.append(utils.wind_vector(self.v_BN_W[-1], self.gamma[-1], self.sigma[-1]))
+        airspeed = utils.wind_vector(self.v_BN_W[-1], self.gamma[-1], self.sigma[-1])
 
         # Convert to ECEF
         y0 = [self.lat[-1], self.lon[-1], self.h[-1]]
         sol = solve_ivp(self.__ecef_ode, [self.time[-1], self.time[-1] + dt], y0, method='RK45')
-        self.lat.append(sol.y[0][-1])
-        self.lon.append(sol.y[1][-1])
-        self.h.append(sol.y[2][-1])
+        lat = sol.y[0][-1]
+        lon = sol.y[1][-1]
+        h = sol.y[2][-1]
+
+        return mass, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag
 
     def _thrustGuidanceSystem(self, dt):
         xT_old = self.xT

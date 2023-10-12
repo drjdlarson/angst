@@ -16,6 +16,7 @@ __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
 from vehicle.FixedWingVehicle import FixedWingVehicle
+from vehicle.ideal_EOM import ideal_EOM_RBFW as RBFW
 import controller.utils as utils
 from controller.FANGS import GuidanceSystem
 
@@ -70,13 +71,16 @@ def run_FW_UAV_GNC_Test(stopTime, loadSimulationFilePath=None, saveSimulationFil
         
         with utils.Timer('run_FW_UAV_GNC_Test'):
             while acft_Guidance.time[-1] < stopTime:
-                if acft_Guidance.time[-1] >= 1 and acft_Guidance.time[-2] < 1:
-                    # Give the aircraft a command
+                if acft_Guidance.time[-1] >= 1 and acft_Guidance.command.time == 0:
+                    # Give the aircraft a command at the ~1 second mark
                     # velocity = 450 mph
                     # rate_of_climb = 5 degrees
                     # heading = 15 degrees (NNE)
                     acft_Guidance.setCommandTrajectory(450 * utils.mph2fps, 5 * utils.d2r, 15 * utils.d2r)
-                acft_Guidance.stepTime()
+                acft_Guidance.getGuidanceCommands()
+                new_state = RBFW(acft_Guidance.Vehicle, acft_Guidance.Thrust[-1], acft_Guidance.Lift[-1], acft_Guidance.alpha_c, acft_Guidance.mu, acft_Guidance.h_c, acft_Guidance.v_BN_W[-1], acft_Guidance.gamma[-1], acft_Guidance.sigma[-1], acft_Guidance.mass[-1], acft_Guidance.airspeed[-1], acft_Guidance.lat[-1], acft_Guidance.lon[-1], acft_Guidance.h[-1], acft_Guidance.time[-1], acft_Guidance.dt)
+                mass, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag = new_state
+                acft_Guidance.updateSystemState(mass=mass, v_BN_W=v_BN_W, gamma=gamma, sigma=sigma, lat=lat, lon=lon, h=h, airspeed=airspeed, alpha=alpha, drag=drag)
 
         if saveSimulationFilePath is not None:
             with utils.Timer('save_obj'):
