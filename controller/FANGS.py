@@ -80,6 +80,7 @@ class GuidanceSystem:
         self.K_Li = TF_constants['K_Li']
         self.K_mu_p = TF_constants['K_mu_p']
         self.dt = dt  # Default is 0.01 seconds
+        self.Vehicle.dt = self.dt  # Update the Vehicle's default time step
 
         # Set Initial Conditions
         self.time = [time]
@@ -166,23 +167,6 @@ class GuidanceSystem:
 
         # Update time since last command
         self.command.time = self.time[-1]
-
-        # Annoy the user
-        # print(f'Setting the guidance command ({velocity}, {flight_path_angle}, {heading}) at time {self.command.time}')
-
-    # def stepTime(self, dt=None):
-    #     """ Proceed one time step forward in the simulation.
-        
-    #     Parameters
-    #     ----------
-    #     dt : :float:`Optional. Time step value.
-    #     """
-    #     if dt is None:
-    #         dt = self.dt
-    #     self.getGuidanceCommands(dt)
-    #     self.getEquationsOfMotion_Ideal(dt)
-    #     self.command.save_history()
-    #     self.time.append(self.time[-1]+dt)
 
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.

@@ -16,7 +16,7 @@ class FixedWingVehicle:
     units = 'Imperial'
     angles = 'Radians'
 
-    def __init__(self, VehicleParameters):
+    def __init__(self, VehicleParameters, dt=0.01):
         """Initalize a Fixed Wing Vehicle object.
 
         Parameters
@@ -61,6 +61,7 @@ class FixedWingVehicle:
         self.aspect_ratio = VehicleParameters['aspect_ratio']  # unitless
         self.wing_eff = VehicleParameters['wing_eff']  # ?
         self.mdot = np.nan  # Fuel burn rate, lbs/s
+        self.dt = dt
         if 'mdot' in VehicleParameters.keys():
             self.mdot = VehicleParameters['mdot']
 
