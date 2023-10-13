@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Utility functions for FixedWingUAV_Control.py script
+""" Utility functions for FANGS.py script
 """
 __author__ = "Alex Springer"
 __version__ = "1.0.0"
