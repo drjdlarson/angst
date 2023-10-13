@@ -4,10 +4,10 @@
 <img alt="Join us on Slack" src="https://raw.githubusercontent.com/netlify/netlify-cms/master/website/static/img/slack.png" width="165"/>
 </a> -->
 
-![Contributors](https://img.shields.io/github/contributors/ahspringer/FixedWing_NAPS?style=plastic)
-![Forks](https://img.shields.io/github/forks/ahspringer/FixedWing_NAPS?style=plastic)
-![Stars](https://img.shields.io/github/stars/ahspringer/FixedWing_NAPS?style=plastic)
-![Issues](https://img.shields.io/github/issues/ahspringer/FixedWing_NAPS?style=plastic)
+![Contributors](https://img.shields.io/github/contributors/ahspringer/FANGS?style=plastic)
+![Forks](https://img.shields.io/github/forks/ahspringer/FANGS?style=plastic)
+![Stars](https://img.shields.io/github/stars/ahspringer/FANGS?style=plastic)
+![Issues](https://img.shields.io/github/issues/ahspringer/FANGS?style=plastic)
 
 ## (F)ixed Wing (A)ircraft (N)onlinear (G)uidance (S)ystem
 
