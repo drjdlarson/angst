@@ -17,7 +17,7 @@ The algorithms followed for the nonlinear controller are described in the case s
 
 ### FixedWing_NAPS.py
 
-This file is an example run-through of the fixed wing non-linear aircraft performance simulation utilizing the _FANGS.GuidanceSystem_ and a vehicle object of class _FixedWingVehicle_
+This file is an example run-through of the fixed wing non-linear aircraft performance simulation utilizing the _FANGS.GuidanceSystem_ and a vehicle object of class _FixedWingVehicle_ (or any other object with the required parameters).
 
 ### Instructions
 
