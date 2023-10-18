@@ -21,6 +21,7 @@ d2r = 1 / r2d
 mph2fps = 1.46667
 fps2mph = 1 / mph2fps
 m2feet = 3.28084
+knts2fps = 1.68781
 
 # Earth parameters
 Re_bar = 6371000 * m2feet

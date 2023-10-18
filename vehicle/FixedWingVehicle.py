@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import numpy as np
+import random
 
+random.seed(8675309)
 
 class FixedWingVehicle:
     """Implements the base vehicle.
@@ -16,7 +18,7 @@ class FixedWingVehicle:
     units = 'Imperial'
     angles = 'Radians'
 
-    def __init__(self, VehicleParameters, dt=0.01):
+    def __init__(self, VehicleParameters, aircraftID=None, dt=0.01):
         """Initalize a Fixed Wing Vehicle object.
 
         Parameters
@@ -64,6 +66,10 @@ class FixedWingVehicle:
         self.dt = dt
         if 'mdot' in VehicleParameters.keys():
             self.mdot = VehicleParameters['mdot']
+        if aircraftID is not None:
+            self.aircraftID = aircraftID
+        else:
+            self.aircraftID = random.randint(1, 1000)
 
     def setAircraftParameters(self, params):
         """ Add or update Parameters of AircraftParams object
