@@ -1,17 +1,24 @@
 #!/usr/bin/env python
 """ Utility functions for FANGS.py script
+
+    v1.1.0 Notes:
+        1. Added saveTrack
+        2. Added read_kml_coordinates
+        3. Added write_kml_coordinates
 """
 __author__ = "Alex Springer"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
 import numpy as np
-import scipy.linalg as la
 import time
-from contextlib import contextmanager
 import pickle
+import scipy.linalg as la
 import matplotlib.pyplot as plt
+import pandas as pd
+import xml.etree.ElementTree as et
+from contextlib import contextmanager
 from matplotlib.ticker import FormatStrFormatter
 
 
@@ -44,6 +51,14 @@ def save_obj(obj, filepath):
 def load_obj(filepath):
     with open(filepath, 'rb') as loadpath:
         return pickle.load(loadpath)
+
+
+def saveTrack(obj, filepath, downsample=1, Time=True):
+    lat = [x * r2d for x in obj.lat[::downsample]]
+    lon = [x * r2d for x in obj.lon[::downsample]]
+    df = pd.DataFrame.from_dict({'lat':lat, 'lon':lon, 'altitude':obj.h[::downsample]})
+    if Time: df['time'] = obj.time[::downsample]
+    df.to_csv(filepath, index=False)
 
 
 def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPlots=False):
@@ -170,6 +185,46 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPl
     # Show plots
     if showPlots: plt.show()
 
+
+def read_kml_coordinates(filepath):
+    tree = et.parse(filepath)
+    root = tree.getroot()
+    coordinates_path = [elem.tag for elem in tree.iter() if 'coordinates' in elem.tag]
+    lat = []
+    lon = []
+    alt = []
+    for coordinates in root.findall('.//'+coordinates_path[0]):
+        original_coordinates = coordinates.text.replace('\t', '').replace('\n', '')
+        original_coordinates = original_coordinates.replace('0 -', '0, -').split(',')
+    ii = 0
+    for coord in original_coordinates:
+        if ii == 0:
+            lon.append(float(coord))
+        elif ii == 1:
+            lat.append(float(coord))
+        else:
+            alt.append(float(coord))
+        ii += 1
+        if ii == 3: ii = 0
+    return {'lat':lat, 'lon':lon, 'alt':alt}
+
+
+def write_kml_coordinates(original_filepath, new_filepath, new_coordinates):
+    # Format the coordinates how the kml wants them
+    # TODO - make this more user-friendly
+    outstring = '\n\t\t\t\t'
+    for lat, lon, alt in zip(new_coordinates.get('lat'), new_coordinates.get('lon'), new_coordinates.get('alt')):
+        outstring = f'{outstring} {lon},{lat},{alt}'
+    outstring = f'{outstring}  \n\t\t\t'
+
+    tree = et.parse(original_filepath)
+    root = tree.getroot()
+    coordinates_path = [elem.tag for elem in tree.iter() if 'coordinates' in elem.tag]
+    for coordinates in root.findall('.//'+coordinates_path[0]):
+        coordinates.text = outstring
+    
+    tree.write(new_filepath)
+    
 
 @contextmanager
 def Timer(taskName=None):
