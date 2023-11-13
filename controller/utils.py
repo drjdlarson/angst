@@ -53,11 +53,17 @@ def load_obj(filepath):
         return pickle.load(loadpath)
 
 
-def saveTrack(obj, filepath, downsample=1, Time=True):
+def gnc_to_csv(obj, filepath, downsample=1):
     lat = [x * r2d for x in obj.lat[::downsample]]
     lon = [x * r2d for x in obj.lon[::downsample]]
-    df = pd.DataFrame.from_dict({'lat':lat, 'lon':lon, 'altitude':obj.h[::downsample]})
-    if Time: df['time'] = obj.time[::downsample]
+    df = pd.DataFrame.from_dict({'time':obj.time[::downsample],
+                                 'lat':lat,
+                                 'lon':lon,
+                                 'altitude':obj.h[::downsample],
+                                 'command_vel':obj.command.v_BN_W_history[::downsample],
+                                 'command_gamma':obj.command.gamma_history[::downsample],
+                                 'command_sigma':obj.command.sigma_history[::downsample],
+                                 'command_airspeed':obj.command.airspeed_history[::downsample]})
     df.to_csv(filepath, index=False)
 
 

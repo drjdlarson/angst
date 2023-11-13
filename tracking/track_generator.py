@@ -1,19 +1,20 @@
 """ Track generators for aerial targets """
 import numpy as np
 import tracking.coordinate_transforms as ct
+import controller.utils as utils
+import pandas as pd
 
 
-class air_to_air_3d_ideal:
+class ideal_a2a:
     def __init__(self, lat, lon, alt, roll, pitch, heading, time=0):
-        # Define the host (measuring) aircraft
-        self.host = self.state(lat, lon, alt, roll, pitch, heading, time)
+        # Define the observer (measuring) aircraft
+        self.observer = self.observer_state(lat, lon, alt, roll, pitch, heading, time)
+        self.target = self.track()
+        self.time = []
+        self.angle_units = 'Radians'
+        self.distance_units = 'feet'
 
-        # Init tracking values
-        self.bearing = []
-        self.lookup = []
-        self.range = []
-
-    class state:
+    class observer_state:
         def __init__(self, lat, lon, alt, roll, pitch, heading, time):
             self.lat = [lat]
             self.lon = [lon]
@@ -31,66 +32,102 @@ class air_to_air_3d_ideal:
             self.pitch.append(pitch)
             self.heading.append(heading)
             self.time.append(time)
-    
-    def track_target(self, target_lat, target_lon, target_alt, time):
-        brng = target_bearing((self.host.lat[-1], self.host.lon[-1], self.host.alt[-1]),
-                             (target_lat, target_lon, target_alt),
-                             method='lla') - self.host.heading[-1]
-        rng = target_range((self.host.lat[-1], self.host.lon[-1], self.host.alt[-1]),
+
+    class track:
+        def __init__(self):
+            # Init tracking values
+            self.bearing = []
+            self.elevation = []
+            self.range = []
+
+    def track_target_ideal(self, target_lat, target_lon, target_alt, time):
+        brng = target_bearing((self.observer.lat[-1], self.observer.lon[-1], self.observer.alt[-1]),
+                              (target_lat, target_lon, target_alt),
+                              bearing_angle_units=self.angle_units)
+        brng = brng - self.observer.heading[-1]
+        rng = target_range((self.observer.lat[-1], self.observer.lon[-1], self.observer.alt[-1]),
                            (target_lat, target_lon, target_alt),
-                           method='lla')
-        self.bearing.append(brng)
-        self.range.append(rng)
-        self.host.time.append(time)
+                           range_units=self.distance_units)
+        elev = target_elevation((self.observer.lat[-1], self.observer.lon[-1], self.observer.alt[-1]),
+                                (target_lat, target_lon, target_alt),
+                                elevation_angle_units=self.angle_units)
+        self.target.bearing.append(brng)
+        self.target.range.append(rng)
+        self.target.elevation.append(elev)
+        self.time.append(time)
 
 
-def target_bearing(pos1, pos2=None, angles='Radians', units='feet', method='ned'):
+    def DataFrame(self, downsample=1):
+        trackdict = {f'time (seconds)': self.time[::downsample],
+                     f'bearing ({self.angle_units})': self.target.bearing[::downsample],
+                     f'range ({self.distance_units})': self.target.range[::downsample],
+                     f'elevation ({self.angle_units})': self.target.elevation[::downsample]}
+        return pd.DataFrame(trackdict)
+
+    def to_csv(self, filename, downsample=1):
+        df = self.DataFrame(downsample)
+        df.to_csv(filename, index=False)
+
+class noisy_a2a(ideal_a2a):
+    def __init__(self, lat, lon, alt, roll, pitch, heading, noise_mean=0, noise_std=0.1, time=0, noise_type='Gaussian'):
+        ideal_a2a.__init__(self, lat, lon, alt, roll, pitch, heading, time)
+        self.update_noise_parameters(noise_mean, noise_std, noise_type)
+
+    def track_target(self, target_lat, target_lon, target_alt, time):
+        # Create ideal track
+        self.track_target_ideal(target_lat, target_lon, target_alt, time)
+        # Add noise
+        self.target.bearing[-1] = self.target.bearing[-1] + self.noise()
+        self.target.range[-1] = self.target.range[-1] + self.noise()
+        self.target.elevation[-1] = self.target.elevation[-1] + self.noise()
+
+    def update_noise_parameters(self, noise_mean, noise_std, noise_type=None):
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
+        if noise_type is not None: self.noise_type = noise_type
+
+    def noise(self):
+        if self.noise_type == 'Gaussian':
+            return np.random.normal(self.noise_mean, self.noise_std)
+        else:
+            print(f'{self.noise_type} unsupported.')
+            return 0
+
+
+def target_bearing(lla1, lla2, bearing_angle_units="Radians"):
     # TODO: noise/drop-outs
-    if method in ['lla', 'LLA']:
-        if pos2 is None: raise(ValueError('When method is set to lla, pos2 is required.'))
-        lat1, lon1, alt1, lat2, lon2, alt2, dLon = unpack_lla(pos1, pos2, angles)
-        ned = ct.lla_to_NED(lat1, lon1, alt1, lat2, lon2, alt2)
-        n1 = ned[0][0]
-        e1 = ned[1][0]
-        d1 = ned[2][0]
-    elif method in ['ned', 'NED']:
-        if pos2 is not None: print('Reminder: Only pos1 is used when the method is set to NED.')
-        n1, e1, d1 = pos1
-    brng = np.arctan2(e1,n1)
-    if angles in ['Degrees', 'degrees', 'deg', 'Deg', 'd', 'D']:
-        print(f'Converting {brng} Radians to Degrees')
+    lat1, lon1, alt1 = lla1
+    lat2, lon2, alt2 = lla2
+    ned = ct.lla_to_NED(lat1, lon1, alt1, lat2, lon2, alt2)
+    n1 = ned[0][0]
+    e1 = ned[1][0]
+    brng = np.arctan2(e1, n1)
+    if bearing_angle_units in ["Degrees", "degrees", "deg", "Deg", "d", "D"]:
         brng = np.degrees(brng)
     return brng
 
 
-def target_range(pos1, pos2, angles='Radians', units='feet', method='ned'):
-    # Convert to NED if needed
-    if method in ['lla', 'LLA']:
-        if pos2 is None: raise(ValueError('When method is set to lla, pos2 is required.'))
-        lat1, lon1, alt1, lat2, lon2, alt2, dLon = unpack_lla(pos1, pos2, angles)
-        ned = ct.lla_to_NED(lat1, lon1, alt1, lat2, lon2, alt2)
-        n1 = ned[0][0]
-        e1 = ned[1][0]
-        d1 = ned[2][0]
-    elif method in ['ned', 'NED']:
-        if pos2 is not None: print('Reminder: Only pos1 is used when the method is set to NED.')
-        n1, e1, d1 = pos1
-    # Compute euclidian distance using NED coordinates
-    return np.sqrt(n1**2 + e1**2 + d1**2)
+def target_range(lla1, lla2, range_units="feet"):
+    lat1, lon1, alt1 = lla1
+    lat2, lon2, alt2 = lla2
+    ned = ct.lla_to_NED(lat1, lon1, alt1, lat2, lon2, alt2)
+    n1 = ned[0][0]
+    e1 = ned[1][0]
+    d1 = ned[2][0]
+    rng = np.sqrt(n1**2 + e1**2 + d1**2)
+    if range_units in ['feet', 'ft', 'Feet', 'Ft']:
+        rng = rng * utils.m2feet
+    return rng
 
 
-def target_lookupAngle(pos1, pos2, angles='Radians'):
-    return
+def target_elevation(lla1, lla2, elevation_angle_units="Radians"):
+    lat1, lon1, alt1 = lla1
+    lat2, lon2, alt2 = lla2
+    ned = ct.lla_to_NED(lat1, lon1, alt1, lat2, lon2, alt2)
+    d1 = ned[2][0]
+    rng = target_range(lla1, lla2, range_units='meters')
+    angle = np.arctan2(d1, rng)
+    if elevation_angle_units in ["Degrees", "degrees", "deg", "Deg", "d", "D"]:
+        angle = np.degrees(angle)
+    return angle
 
-
-def unpack_lla(pos1, pos2, angles='Radians'):
-    lat1, lon1, alt1 = pos1
-    lat2, lon2, alt2 = pos2
-    dLon = lon2 - lon1
-    if angles in ['Degrees', 'degrees', 'deg', 'Deg', 'd', 'D']:
-        lat1 = np.radians(lat1)
-        lon1 = np.radians(lon1)
-        lat2 = np.radians(lat2)
-        lon2 = np.radians(lon2)
-        dLon = np.radians(dLon)
-    return lat1, lon1, alt1, lat2, lon2, alt2, dLon
