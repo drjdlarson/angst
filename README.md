@@ -1,4 +1,4 @@
-# FANGS v1.1
+# FANGS v1.2
 
 <!-- <a href="https://join.slack.com/t/ngc-goz8665/shared_invite/zt-r01kumfq-dQUT3c95BxEP_fnk4yJFfQ">
 <img alt="Join us on Slack" src="https://raw.githubusercontent.com/netlify/netlify-cms/master/website/static/img/slack.png" width="165"/>
@@ -13,11 +13,15 @@
 
 ### Description
 
-The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. The _FANGS.GuidanceSystem_ has a baked-in default state estimator utilizing ideal equations of motion, but the user is encouraged to provide their own state solution at each time step using their own state solver or states and rates of their aircraft if this set of algorithms is used for flight.
+The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. The _fangs.GuidanceSystem_ has a baked-in default state estimator utilizing ideal equations of motion, but the user is encouraged to provide their own state solution at each time step using their own state solver or states and rates of their aircraft if this set of algorithms is used for flight.
 
 ### FixedWing_NAPS.py
 
 This file is an example run-through of the fixed wing non-linear aircraft performance simulation utilizing the _FANGS.GuidanceSystem_ and a vehicle object of class _FixedWingVehicle_ (or any other object with the required parameters).
+
+### C2_track_build.py
+
+This file is used to simulate one or more drones being launched from a C2 aircraft. The current version (v1.2) simulates 6 drones launched from a stationary (hovering) aircraft. The vehicle guidance system objects are saved as .pkl files to be loaded and used in future simulations, and 3D track files (range, bearing, and elevation angle) are created with simulated noise. These track files are saved as .csv format to be used in the future with the [carbs](https://github.com/drjdlarson/carbs) package for target tracking. The .pkl files, which define each individual drone object, will be used with the [carbs](https://github.com/drjdlarson/carbs) package for drone swarm optimized control and planning.
 
 ### Instructions
 
@@ -32,4 +36,5 @@ This file is an example run-through of the fixed wing non-linear aircraft perfor
 
 ### Current Tasks:
 
-1. Output coordinates/altitude for import into Google Earth
+1. Use saved drone simulation tracks with [carbs](https://github.com/drjdlarson/carbs) tracking algorithms to evaluate and further understand air-to-air target tracking.
+2. Use [carbs](https://github.com/drjdlarson/carbs) and/or [gncpy](https://github.com/drjdlarson/gncpy) to build swarm optimization and command controls.
