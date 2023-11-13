@@ -9,16 +9,9 @@
             - Commanded rates of climb/descent
             - Commanded headings
         In the current implementation, the attitude dynamics of the vehicle are approximated using ideal equations of motion.
-
-        TODO
-        - Using test_tracker.py as a reference, build test for various filters
-        - Add noise to tracks
-        - Create up to 8 tracks
-        - Output tracks in a form that can be used in the filters
-        - Run it!
 """
 __author__ = "Alex Springer"
-__version__ = "1.0.1"
+__version__ = "1.2.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
