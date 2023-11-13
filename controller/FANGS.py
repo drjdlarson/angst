@@ -52,7 +52,7 @@ class GuidanceSystem:
         c. Presence of winds give rise to differences in inertial velocity and airspeed
     """
 
-    def __init__(self, vehicle, TF_constants, InitialConditions, time = 0, dt=0.01):
+    def __init__(self, vehicle, TF_constants, InitialConditions, time = 0, dt=0.01, verbose=True):
         """ Initialize a fixed-wing nonlinear performance guidance system.
         
         Parameters
@@ -72,6 +72,8 @@ class GuidanceSystem:
             Can also be specified at any later time for non-uniform time steps
         """
         self.Vehicle = vehicle
+        self.verbose = verbose
+        if self.verbose: print(f'\n---\nInitializing GNC for aircraft {self.Vehicle.aircraftID} at time {time}')
 
         # Set tuning parameters
         self.K_Tp = TF_constants['K_Tp']
@@ -116,6 +118,7 @@ class GuidanceSystem:
         self.alpha_c = [0]
         self.h_c = [0]
         self.sigma_err = 0
+        self.crashed = False
 
         # Calculate initial alpha, drag, and mu
         self.alpha = [self._calculateAlpha()]
@@ -214,21 +217,35 @@ class GuidanceSystem:
         if dt is None:
             dt = self.dt
         sys_states = (mass, v_BN_W, gamma, sigma, lat, lon, h, airspeed, alpha, drag)
-        if None in sys_states:
-            ideal_eom = self._getEquationsOfMotion_Ideal()
-            sys_states = [ideal_eom[i] if sys_states[i] is None else sys_states[i] for i in range(len(sys_states))]
-        self.mass.append(sys_states[0])
-        self.v_BN_W.append(sys_states[1])
-        self.gamma.append(sys_states[2])
-        self.sigma.append(sys_states[3])
-        self.lat.append(sys_states[4])
-        self.lon.append(sys_states[5])
-        self.h.append(sys_states[6])
-        self.airspeed.append(sys_states[7])
-        self.alpha.append(sys_states[8])
-        self.drag.append(sys_states[9])
-        self.time.append(self.time[-1] + dt)
-        self.command.save_history()
+        if self.crashed:
+            self.mass.append(self.mass[-1])
+            self.v_BN_W.append(0)
+            self.gamma.append(0)
+            self.sigma.append(0)
+            self.lat.append(self.lat[-1])
+            self.lon.append(self.lon[-1])
+            self.h.append(self.h[-1])
+            self.airspeed.append(0)
+            self.alpha.append(0)
+            self.drag.append(0)
+            self.time.append(self.time[-1] + dt)
+            self.command.save_history()
+        else:
+            if None in sys_states:
+                ideal_eom = self._getEquationsOfMotion_Ideal()
+                sys_states = [ideal_eom[i] if sys_states[i] is None else sys_states[i] for i in range(len(sys_states))]
+            self.mass.append(sys_states[0])
+            self.v_BN_W.append(sys_states[1])
+            self.gamma.append(sys_states[2])
+            self.sigma.append(sys_states[3])
+            self.lat.append(sys_states[4])
+            self.lon.append(sys_states[5])
+            self.h.append(sys_states[6])
+            self.airspeed.append(sys_states[7])
+            self.alpha.append(sys_states[8])
+            self.drag.append(sys_states[9])
+            self.time.append(self.time[-1] + dt)
+            self.command.save_history()
 
     def _getEquationsOfMotion_Ideal(self, dt=None):
         """ An ideal equations of motion solver for a rigid body fixed-wing aircraft.
@@ -281,7 +298,7 @@ class GuidanceSystem:
 
         # Saturation of thrust command
         if self.Tc > self.Vehicle.T_max:
-            print(f'Commanded thrust {self.Tc} exceeds max thrust {self.Vehicle.T_max}')
+            # print(f'({self.Vehicle.aircraftID}) Commanded thrust {self.Tc} exceeds max thrust {self.Vehicle.T_max}')
             self.Tc = self.Vehicle.T_max
 
         sol = solve_ivp(self.__T_dot_ode, [self.time[-1], self.time[-1] + dt], [self.Thrust[-1]], method='RK45')
@@ -309,7 +326,7 @@ class GuidanceSystem:
 
         # Saturation (upper/lower limits on commanded lift)
         if self.Lc > L_max:
-            print(f'Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
+            # print(f'({self.Vehicle.aircraftID}) Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
             self.Lc = L_max
 
         # Calculate lift
@@ -336,7 +353,7 @@ class GuidanceSystem:
         mu = self._calculateMu()
 
         if np.abs(mu) > self.Vehicle.mu_max:
-            print(f'Command bank angle {mu} exceeds max allowable bank angle |{self.Vehicle.mu_max}|')
+            # print(f'({self.Vehicle.aircraftID}) Command bank angle {mu} exceeds max allowable bank angle |{self.Vehicle.mu_max}|')
             mu = np.sign(mu) * self.Vehicle.mu_max
 
         self.mu.append(mu)
