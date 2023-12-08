@@ -88,16 +88,18 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         drone8 = FixedWingVehicle(drone_parameters, aircraftID=1008, dt=C2["dt"])
 
     # Define the drone initial conditions - true for all 8 drones since C2 at hover
+    lat, lon = utils.get_point_at_distance(C2['lat'], C2['lon'], 750, C2['heading'])
     drone_init_conds = {
-        "v_BN_W": 50 * utils.knts2fps,
+        "v_BN_W": 50 * utils.knts2fps,  # Stabilizes into flight at 50kts
         "h": C2['alt'],  # Launched from C2 aircraft
         "gamma": 0,  # No ascent or descent
-        "sigma": 0,  # Northbound
-        "lat": C2['lat'],
-        "lon": C2['lon'],
+        "sigma": C2['heading'],  # Northbound
+        "lat": lat,
+        "lon": lon,
         "v_WN_N": [10 * utils.knts2fps, 10 * utils.knts2fps, 0],
         "weight": 80,
     }
+    
 
     # Drone PI Guidance Transfer Functions
     TF_constants = {
@@ -240,18 +242,22 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         with utils.Timer(f"track_drone_targets"):
             track_builders = {}
             for drone_name, drone_gnc in drones.items():
-                print(f'Building noisy track data for {drone_name}...')
+                print(f'Building track data for {drone_name}...')
                 track_builders[drone_name] = track.noisy_a2a(C2["lat"], C2["lon"], C2["alt"], C2["roll"], C2["pitch"], C2["heading"],
                                                              noise_mean=0, noise_std=0.15, time=drone_gnc.time[0])
+                # track_builders[drone_name] = track.ideal_a2a(C2["lat"], C2["lon"], C2["alt"], C2["roll"], C2["pitch"], C2["heading"])
                 track_builders[drone_name].angle_units = 'Degrees'
                 track_builders[drone_name].distance_units = 'Feet'
                 for ii in range(len(drone_gnc.time)):
+                    # track_builders[drone_name].track_target_ideal(drone_gnc.lat[ii], drone_gnc.lon[ii], drone_gnc.h[ii], drone_gnc.time[ii])
                     track_builders[drone_name].track_target(drone_gnc.lat[ii], drone_gnc.lon[ii], drone_gnc.h[ii], drone_gnc.time[ii])
 
                 print(f'{drone_name} tracked from {track_builders[drone_name].time[0]} seconds to {track_builders[drone_name].time[-1]} seconds')
 
-                track_builders[drone_name].to_csv(f'{drone_name}_track.csv', downsample=10)
-                utils.gnc_to_csv(drone_gnc, f'{drone_name}_lla.csv')
+                # track_builders[drone_name].to_csv(f'{drone_name}_ideal_track.csv', downsample=10)
+                # utils.gnc_to_csv(drone_gnc, f'{drone_name}_ideal_lla.csv')
+                track_builders[drone_name].to_csv(f'{drone_name}_noisy_track.csv', downsample=10)
+                utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_lla.csv')
 
         with utils.Timer('saving_track_plot'):
             fig, (ax_brg, ax_elv, ax_rng) = plt.subplots(3)
@@ -270,7 +276,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
             ax_elv.axes.get_xaxis().set_visible(False)
             ax_elv.grid(visible='True')
             ax_rng.grid(visible='True')
-            fig.savefig('6tracks.png')
+            fig.savefig(f'noisy_{len(track_builders.keys())}_tracks.png')
 
     if runSim:
         with utils.Timer('saving_drone_flight_objs'):

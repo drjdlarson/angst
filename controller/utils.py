@@ -21,7 +21,6 @@ import xml.etree.ElementTree as et
 from contextlib import contextmanager
 from matplotlib.ticker import FormatStrFormatter
 
-
 # Constants
 r2d = 180.0 / np.pi
 d2r = 1 / r2d
@@ -34,6 +33,23 @@ knts2fps = 1.68781
 Re_bar = 6371000 * m2feet
 const_density = 2.3769e-3
 const_gravity = 32.17
+
+
+def get_point_at_distance(lat1, lon1, dist, bearing):
+    """
+    lat: initial latitude, in radians
+    lon: initial longitude, in radians
+    d: target distance from initial in meters
+    bearing: (true) heading in radians
+
+    Returns new lat/lon coordinate {dist}m from initial, in degrees
+    """
+    lat2 = np.arcsin(np.sin(lat1) * np.cos(dist/Re_bar) + np.cos(lat1) * np.sin(dist/Re_bar) * np.cos(bearing))
+    lon2 = lon1 + np.arctan2(
+        np.sin(bearing) * np.sin(dist/Re_bar) * np.cos(lat1),
+        np.cos(dist/Re_bar) - np.sin(lat1) * np.sin(lat2)
+    )
+    return lat2, lon2
 
 
 def wind_vector(v_BN_W, gamma, sigma):
