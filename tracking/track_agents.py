@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import csv
 from copy import deepcopy
 from contextlib import contextmanager
+import matplotlib
 
 import scipy.stats as stats
 
@@ -62,8 +63,8 @@ def _multidim_dis_process_noise_mat(p_noise, dim=4):
 
 
 def _setup_double_int_kf(dt):
-    m_noise = 0.15**2
-    p_noise = 0.2
+    m_noise = 30
+    p_noise = 25
 
     filt = gfilts.KalmanFilter()
     filt.set_state_model(state_mat_fun=_state_mat_fun)
@@ -78,7 +79,7 @@ def _setup_double_int_kf(dt):
 
 def _setup_phd_double_int_birth():
     mu = [np.array([750.0, 0.0, 0.0, 0.0, 0.0, 0.0]).reshape((6, 1))]
-    cov = [np.diag(np.array([1, 1, 1, 1, 1, 1])) ** 2]
+    cov = [np.diag(np.array([10, 10, 10, 15, 15, 15])) ** 2]
     gm0 = smodels.GaussianMixture(means=mu, covariances=cov, weights=[1])
 
     return [gm0]
@@ -159,14 +160,21 @@ def track_agents_PHD(tracks_file):
 
                 phd.cleanup(enable_merge=True)
 
-                # if ii > 10:
-                #     break  # Only calculate first 11 iterations for troubleshooting
+                if ii > 100: break
 
             ii+=1
 
     if debug_plots:
-        states_plot = phd.plot_states([0, 1])  # I want to view these
+        print("Attempting to plot using WebAgg")
+        matplotlib.use("WebAgg")
+        # phd.plot_states([0, 1])
+        states_plot = phd.plot_states([1, 2], x_lbl='range', y_lbl='height')  # I want to view these
+        states_plot.show()
         states_plot.savefig("PHD_track_states.png")
+        s_lst = deepcopy(phd._states)
+        for tt, states in enumerate(s_lst):
+        #     # x = np.concatenate(states, axis=1)
+            print(states)
 
 
 def track_agents_CPHD(tracks_file):
