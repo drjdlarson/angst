@@ -129,5 +129,5 @@ def target_elevation(lla1, lla2, elevation_angle_units="Radians"):
     angle = np.arctan2(d1, rng)
     if elevation_angle_units in ["Degrees", "degrees", "deg", "Deg", "d", "D"]:
         angle = np.degrees(angle)
-    return angle
+    return angle * -1
 

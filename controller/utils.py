@@ -76,6 +76,10 @@ def gnc_to_csv(obj, filepath, downsample=1):
                                  'lat':lat,
                                  'lon':lon,
                                  'altitude':obj.h[::downsample],
+                                 'groundspeed':obj.v_BN_W[::downsample],
+                                 'gamma':obj.gamma[::downsample],
+                                 'sigma':obj.sigma[::downsample],
+                                 'airspeed':obj.airspeed[::downsample],
                                  'command_vel':obj.command.v_BN_W_history[::downsample],
                                  'command_gamma':obj.command.gamma_history[::downsample],
                                  'command_sigma':obj.command.sigma_history[::downsample],
@@ -144,7 +148,7 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPl
     ax_aoa.plot(acft_Guidance.time, alpha_deg, label='Response')
     ax_aoa.set_title('Angle of Attack')
     ax_aoa.set_xlabel('Time (s)')
-    ax_aoa.set_ylabel('Heading (deg)')
+    ax_aoa.set_ylabel('Angle of Attack (deg)')
     ax_aoa.legend()
     ax_aoa.grid(visible='True')
 
@@ -170,6 +174,7 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPl
 
     # Plot results (forces)
     fig_forces, ax_forces = plt.subplots(1)
+    ax_forces.plot(acft_Guidance.time, acft_Guidance.Tc, label='Thrust Command')
     ax_forces.plot(acft_Guidance.time, acft_Guidance.Thrust, label='Thrust Response')
     ax_forces.plot(acft_Guidance.time, acft_Guidance.drag, label='Drag Response')
     ax_forces.set_title('Forces')

@@ -2,8 +2,7 @@ import controller.utils as utils
 
 
 if __name__ == '__main__':
-    drone4 = utils.load_obj('drone4.pkl')
-    print(drone4.lon[-2], drone4.lon[-1])
+    testing_drone1 = utils.load_obj('testing_drone1.pkl')
+    print(testing_drone1.lat[10], testing_drone1.lon[10], testing_drone1.h[10])
 
-    drone5 = utils.load_obj('drone5.pkl')
-    print(drone5.lon[-2], drone5.lon[-1])
+    utils.plotSim(testing_drone1, showPlots=True)

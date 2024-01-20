@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import tracking.track_generator as track
 
 import sys
-import pytest
+# import pytest
 import numpy as np
 import numpy.random as rnd
 from copy import deepcopy
@@ -31,12 +31,12 @@ from copy import deepcopy
 import scipy.stats as stats
 import random
 
-import gncpy.filters as gfilts
-import gncpy.dynamics.basic as gdyn
-import gncpy.distributions as gdistrib
-import carbs.swarm_estimator.tracker as tracker
-import serums.models as smodels
-from serums.enums import GSMTypes, SingleObjectDistance
+# import gncpy.filters as gfilts
+# import gncpy.dynamics.basic as gdyn
+# import gncpy.distributions as gdistrib
+# import carbs.swarm_estimator.tracker as tracker
+# import serums.models as smodels
+# from serums.enums import GSMTypes, SingleObjectDistance
 
 rng_seed = 7
 
@@ -62,15 +62,15 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         "speed_max": 75 * utils.knts2fps,
         "speed_min": 25 * utils.knts2fps,
         "Kf": 0,
-        "omega_T": 2,
-        "omega_L": 2.5,
-        "omega_mu": 1,
+        "omega_T": 2.0,
+        "omega_L": 0.5,
+        "omega_mu": 1.0,
         "T_max": 30,
-        "K_Lmax": 2.6,
-        "mu_max": 60 * utils.d2r,
+        "K_Lmax": 0.26,
+        "mu_max": 45 * utils.d2r,
         "C_Do": 0.02,
-        "C_Lalpha": 0.1 / utils.d2r,
-        "alpha_o": -0.05 * utils.d2r,
+        "C_Lalpha": 0.5 / utils.d2r,
+        "alpha_o": -0.1 * utils.d2r,
         "wing_area": 8,
         "aspect_ratio": 12,
         "wing_eff": 0.8,
@@ -96,15 +96,15 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         "sigma": C2['heading'],  # Northbound
         "lat": lat,
         "lon": lon,
-        "v_WN_N": [10 * utils.knts2fps, 10 * utils.knts2fps, 0],
+        "v_WN_N": [0 * utils.knts2fps, 0 * utils.knts2fps, 0],
         "weight": 80,
     }
     
 
     # Drone PI Guidance Transfer Functions
     TF_constants = {
-        "K_Tp": 0.08,
-        "K_Ti": 0.002,
+        "K_Tp": 0.2,
+        "K_Ti": 0.01,
         "K_Lp": 0.5,
         "K_Li": 0.01,
         "K_mu_p": 0.075,
@@ -132,7 +132,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
     drones = {"drone1":drone1_gnc}
 
     """ RUN THE SIMULATION """
-    runSim = False  # Set to True to run the simulation, or False to load .pkl files from previous simulations
+    runSim = True  # Set to True to run the simulation, or False to load .pkl files from previous simulations
     verbose = False  # Set to True to get a lot of outputs
 
     if runSim:
@@ -143,24 +143,24 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 if C2["time"][-1] >= launch_delay*1 and "drone2" not in drones.keys():
                     drone2_gnc = GuidanceSystem(drone2, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
                     drones["drone2"] = drone2_gnc
-                elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
-                    drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                    drones["drone3"] = drone3_gnc
-                elif C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
-                    drone4_gnc = GuidanceSystem(drone4, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                    drones["drone4"] = drone4_gnc
-                elif C2["time"][-1] >= launch_delay*4 and "drone5" not in drones.keys():
-                    drone5_gnc = GuidanceSystem(drone5, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                    drones["drone5"] = drone5_gnc
-                elif C2["time"][-1] >= launch_delay*5 and "drone6" not in drones.keys():
-                    drone6_gnc = GuidanceSystem(drone6, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                    drones["drone6"] = drone6_gnc
-                elif C2["time"][-1] >= launch_delay*6 and "drone7" not in drones.keys():
-                    drone7_gnc = GuidanceSystem(drone7, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                    drones["drone7"] = drone7_gnc
-                elif C2["time"][-1] >= launch_delay*7 and "drone8" not in drones.keys():
-                    drone8_gnc = GuidanceSystem(drone8, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                    drones["drone8"] = drone8_gnc
+                # elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
+                #     drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                #     drones["drone3"] = drone3_gnc
+                # elif C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
+                #     drone4_gnc = GuidanceSystem(drone4, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                #     drones["drone4"] = drone4_gnc
+                # elif C2["time"][-1] >= launch_delay*4 and "drone5" not in drones.keys():
+                #     drone5_gnc = GuidanceSystem(drone5, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                #     drones["drone5"] = drone5_gnc
+                # elif C2["time"][-1] >= launch_delay*5 and "drone6" not in drones.keys():
+                #     drone6_gnc = GuidanceSystem(drone6, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                #     drones["drone6"] = drone6_gnc
+                # elif C2["time"][-1] >= launch_delay*6 and "drone7" not in drones.keys():
+                #     drone7_gnc = GuidanceSystem(drone7, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                #     drones["drone7"] = drone7_gnc
+                # elif C2["time"][-1] >= launch_delay*7 and "drone8" not in drones.keys():
+                #     drone8_gnc = GuidanceSystem(drone8, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                #     drones["drone8"] = drone8_gnc
 
                 for drone_name, drone_gnc in drones.items():
                     if not drone_gnc.crashed:
@@ -239,49 +239,52 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 drones[f'drone{drone}'] = utils.load_obj(f'drone{drone}.pkl')
             # print(drones.items())
 
-        with utils.Timer(f"track_drone_targets"):
-            track_builders = {}
-            for drone_name, drone_gnc in drones.items():
-                print(f'Building track data for {drone_name}...')
-                track_builders[drone_name] = track.noisy_a2a(C2["lat"], C2["lon"], C2["alt"], C2["roll"], C2["pitch"], C2["heading"],
-                                                             noise_mean=0, noise_std=0.15, time=drone_gnc.time[0])
-                # track_builders[drone_name] = track.ideal_a2a(C2["lat"], C2["lon"], C2["alt"], C2["roll"], C2["pitch"], C2["heading"])
-                track_builders[drone_name].angle_units = 'Degrees'
-                track_builders[drone_name].distance_units = 'Feet'
-                for ii in range(len(drone_gnc.time)):
-                    # track_builders[drone_name].track_target_ideal(drone_gnc.lat[ii], drone_gnc.lon[ii], drone_gnc.h[ii], drone_gnc.time[ii])
-                    track_builders[drone_name].track_target(drone_gnc.lat[ii], drone_gnc.lon[ii], drone_gnc.h[ii], drone_gnc.time[ii])
+    with utils.Timer(f"track_drone_targets"):
+        track_builders = {}
+        for drone_name, drone_gnc in drones.items():
+            print(f'Building track data for {drone_name}...')
+            track_builders[drone_name] = track.noisy_a2a(C2["lat"], C2["lon"], C2["alt"], C2["roll"], C2["pitch"], C2["heading"],
+                                                            noise_mean=0, noise_std=0.15, time=drone_gnc.time[0])
+            # track_builders[drone_name] = track.ideal_a2a(C2["lat"], C2["lon"], C2["alt"], C2["roll"], C2["pitch"], C2["heading"])
+            track_builders[drone_name].angle_units = 'Degrees'
+            track_builders[drone_name].distance_units = 'Feet'
+            for ii in range(len(drone_gnc.time)):
+                # track_builders[drone_name].track_target_ideal(drone_gnc.lat[ii], drone_gnc.lon[ii], drone_gnc.h[ii], drone_gnc.time[ii])
+                track_builders[drone_name].track_target(drone_gnc.lat[ii], drone_gnc.lon[ii], drone_gnc.h[ii], drone_gnc.time[ii])
+                if ii == 10:
+                    print()
 
-                print(f'{drone_name} tracked from {track_builders[drone_name].time[0]} seconds to {track_builders[drone_name].time[-1]} seconds')
+            print(f'{drone_name} tracked from {track_builders[drone_name].time[0]} seconds to {track_builders[drone_name].time[-1]} seconds')
 
-                # track_builders[drone_name].to_csv(f'{drone_name}_ideal_track.csv', downsample=10)
-                # utils.gnc_to_csv(drone_gnc, f'{drone_name}_ideal_lla.csv')
-                track_builders[drone_name].to_csv(f'{drone_name}_noisy_track.csv', downsample=10)
-                utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_lla.csv')
+            # track_builders[drone_name].to_csv(f'{drone_name}_ideal_track.csv', downsample=10)
+            # utils.gnc_to_csv(drone_gnc, f'{drone_name}_ideal_lla.csv')
+            track_builders[drone_name].to_csv(f'{drone_name}_noisy_track.csv', downsample=10)
+            utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_lla.csv')
 
-        with utils.Timer('saving_track_plot'):
-            fig, (ax_brg, ax_elv, ax_rng) = plt.subplots(3)
-            [ax_brg.plot(track.time, track.target.bearing) for _, track in track_builders.items()]
-            [ax_rng.plot(track.time, track.target.range) for _, track in track_builders.items()]
-            [ax_elv.plot(track.time, track.target.elevation) for _, track in track_builders.items()]
-            ax_rng.set_title(f'target range [Feet]')
-            ax_brg.set_title(f'target bearing [Degrees]')
-            ax_elv.set_title(f'target elevation [Degrees]')
-            ax_brg.set_xticklabels([])
-            ax_brg.set_xticks([])
-            ax_brg.axes.get_xaxis().set_visible(False)
-            ax_brg.grid(visible='True')
-            ax_elv.set_xticklabels([])
-            ax_elv.set_xticks([])
-            ax_elv.axes.get_xaxis().set_visible(False)
-            ax_elv.grid(visible='True')
-            ax_rng.grid(visible='True')
-            fig.savefig(f'noisy_{len(track_builders.keys())}_tracks.png')
+    with utils.Timer('saving_track_plot'):
+        fig, (ax_brg, ax_elv, ax_rng) = plt.subplots(3)
+        [ax_brg.plot(track.time, track.target.bearing) for _, track in track_builders.items()]
+        [ax_rng.plot(track.time, track.target.range) for _, track in track_builders.items()]
+        [ax_elv.plot(track.time, track.target.elevation) for _, track in track_builders.items()]
+        ax_rng.set_title(f'target range [Feet]')
+        ax_brg.set_title(f'target bearing [Degrees]')
+        ax_elv.set_title(f'target elevation [Degrees]')
+        ax_brg.set_xticklabels([])
+        ax_brg.set_xticks([])
+        ax_brg.axes.get_xaxis().set_visible(False)
+        ax_brg.grid(visible='True')
+        ax_elv.set_xticklabels([])
+        ax_elv.set_xticks([])
+        ax_elv.axes.get_xaxis().set_visible(False)
+        ax_elv.grid(visible='True')
+        ax_rng.grid(visible='True')
+        fig.savefig(f'noisy_{len(track_builders.keys())}_tracks.png')
+    fig.show()
 
     if runSim:
         with utils.Timer('saving_drone_flight_objs'):
             for drone_name, drone_gnc in drones.items():
-                utils.save_obj(drone_gnc, f'{drone_name}.pkl')
+                utils.save_obj(drone_gnc, f'testing_{drone_name}.pkl')
 
     return
 

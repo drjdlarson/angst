@@ -86,13 +86,13 @@ class GuidanceSystem:
 
         # Set Initial Conditions
         self.time = [time]
-        self.v_BN_W = [InitialConditions['v_BN_W']]
+        self.v_BN_W = [InitialConditions['v_BN_W']]  # Body-frame velocity of aircraft
         self.h = [InitialConditions['h']]
         self.gamma = [InitialConditions['gamma']]
         self.sigma = [InitialConditions['sigma']]
         self.lat = [InitialConditions['lat']]
         self.lon = [InitialConditions['lon']]
-        self.v_WN_N = [InitialConditions['v_WN_N']]
+        self.v_WN_N = [InitialConditions['v_WN_N']]  # NED-frame wind speed
         self.weight = [InitialConditions['weight']]
         self.mass = [self.weight[0]/utils.const_gravity]
         self.airspeed = [utils.wind_vector(self.v_BN_W[0], self.gamma[0], self.sigma[0])]
@@ -108,22 +108,22 @@ class GuidanceSystem:
         self.units = self.Vehicle.units  # Adopt units from vehicle at init
         self.angles = self.Vehicle.angles  # Adopt angle units from vehicle at init
         self.V_err = 0
-        self.xT = 0
+        self.xT = 0  # Initial V_err should be 0 -> xT = 0
         self.hdot_err = 0
-        self.Tc = 0
-        self.Thrust = [0]
-        self.xL = 0
-        self.Lc = 0
-        self.Lift = [0]
-        self.alpha_c = [0]
-        self.h_c = [0]
+        self.xL = 0  # Initial h_dot should be 0 -> xL = 0
+        self.Lc = [self.weight[0]]  # Command it to maintain lift at equilibrium
+        self.Lift = [self.weight[0]]  # Assuming equilibrium
+        self.h_c = [self.h[0]]
         self.sigma_err = 0
         self.crashed = False
 
         # Calculate initial alpha, drag, and mu
         self.alpha = [self._calculateAlpha()]
+        self.alpha_c = [self.alpha[0]]
         self.drag = [self._calculateDrag()]
         self.mu = [self._calculateMu()]
+        self.Tc = [self.drag[0]]
+        self.Thrust = [self.drag[0]]
 
     class userCommand:
         def __init__(self, v_BN_W, gamma, sigma):
@@ -294,12 +294,14 @@ class GuidanceSystem:
         self.xT = sol.y[-1][-1]
 
         # Use xT in calculation of Thrust command
-        self.Tc = self.K_Ti*self.xT + self.K_Tp*self.mass[-1]*self.V_err
+        self.Tc.append(self.K_Ti*self.xT + self.K_Tp*self.mass[-1]*self.V_err)
 
         # Saturation of thrust command
-        if self.Tc > self.Vehicle.T_max:
+        if self.Tc[-1] > self.Vehicle.T_max:
             # print(f'({self.Vehicle.aircraftID}) Commanded thrust {self.Tc} exceeds max thrust {self.Vehicle.T_max}')
-            self.Tc = self.Vehicle.T_max
+            self.Tc[-1] = self.Vehicle.T_max
+        elif self.Tc[-1] < 0:
+            self.Tc[-1] = 0
 
         sol = solve_ivp(self.__T_dot_ode, [self.time[-1], self.time[-1] + dt], [self.Thrust[-1]], method='RK45')
         self.Thrust.append(sol.y[-1][-1])
@@ -307,8 +309,10 @@ class GuidanceSystem:
         # Saturation of vehicle thrust
         if self.Thrust[-1] > self.Vehicle.T_max:
             self.Thrust[-1] = self.Vehicle.T_max
+        elif self.Thrust[-1] < 0:
+            self.Thrust[-1] = 0
 
-        return self.Tc, self.Thrust[-1]
+        return self.Tc[1], self.Thrust[-1]
 
     def _liftGuidanceSystem(self, dt):
         # Step 1: Calculate max lift (L_max)
@@ -371,7 +375,7 @@ class GuidanceSystem:
 
     def __xT_dot_ode(self, t, xT=0): return self.mass[-1] * self.V_err
 
-    def __T_dot_ode(self, t, T): return -1*self.Vehicle.omega_T*T + self.Vehicle.omega_T*self.Tc
+    def __T_dot_ode(self, t, T): return -1*self.Vehicle.omega_T*T + self.Vehicle.omega_T*self.Tc[-1]
 
     def __xL_dot_ode(self, t, xL): return self.mass[-1] * self.hdot_err
 

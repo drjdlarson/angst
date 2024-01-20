@@ -98,7 +98,7 @@ def lla_to_NED(ref_lat, ref_lon, ref_alt, pos_lat, pos_lon, pos_alt):
     Returns
     -------
     3 x 1 numpy array
-        Position in NED coordinates
+        Position in NED coordinates relative to the reference location
     """
     c_lat = np.cos(ref_lat)
     s_lat = np.sin(ref_lat)
