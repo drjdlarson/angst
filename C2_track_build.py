@@ -65,7 +65,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         "omega_T": 2.0,
         "omega_L": 0.5,
         "omega_mu": 1.0,
-        "T_max": 30,
+        "T_max": 45,
         "K_Lmax": 0.26,
         "mu_max": 45 * utils.d2r,
         "C_Do": 0.05,
@@ -102,11 +102,11 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
     # Drone PI Guidance Transfer Functions
     TF_constants = {
-        "K_Tp": 0.2,  # 0.2
-        "K_Ti": 0.01,  # 0.01
-        "K_Lp": 0.5,
-        "K_Li": 0.01,  # 0.01
-        "K_mu_p": 0.075,
+        "K_Tp": 0.25,  # 0.2
+        "K_Ti": 0.05,  # 0.01
+        "K_Lp": 0.3,
+        "K_Li": 0.03,  # 0.01
+        "K_mu_p": 0.03,  # 0.075
     }
 
     # Build the guidance system using the aircraft object and control system transfer function constants
@@ -142,24 +142,24 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 if C2["time"][-1] >= launch_delay*1 and "drone2" not in drones.keys():
                     drone2_gnc = GuidanceSystem(drone2, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
                     drones["drone2"] = drone2_gnc
-                # elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
-                #     drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone3"] = drone3_gnc
-                # elif C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
-                #     drone4_gnc = GuidanceSystem(drone4, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone4"] = drone4_gnc
-                # elif C2["time"][-1] >= launch_delay*4 and "drone5" not in drones.keys():
-                #     drone5_gnc = GuidanceSystem(drone5, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone5"] = drone5_gnc
-                # elif C2["time"][-1] >= launch_delay*5 and "drone6" not in drones.keys():
-                #     drone6_gnc = GuidanceSystem(drone6, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone6"] = drone6_gnc
-                # elif C2["time"][-1] >= launch_delay*6 and "drone7" not in drones.keys():
-                #     drone7_gnc = GuidanceSystem(drone7, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone7"] = drone7_gnc
-                # elif C2["time"][-1] >= launch_delay*7 and "drone8" not in drones.keys():
-                #     drone8_gnc = GuidanceSystem(drone8, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone8"] = drone8_gnc
+                elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
+                    drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                    drones["drone3"] = drone3_gnc
+                elif C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
+                    drone4_gnc = GuidanceSystem(drone4, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                    drones["drone4"] = drone4_gnc
+                elif C2["time"][-1] >= launch_delay*4 and "drone5" not in drones.keys():
+                    drone5_gnc = GuidanceSystem(drone5, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                    drones["drone5"] = drone5_gnc
+                elif C2["time"][-1] >= launch_delay*5 and "drone6" not in drones.keys():
+                    drone6_gnc = GuidanceSystem(drone6, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                    drones["drone6"] = drone6_gnc
+                elif C2["time"][-1] >= launch_delay*6 and "drone7" not in drones.keys():
+                    drone7_gnc = GuidanceSystem(drone7, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                    drones["drone7"] = drone7_gnc
+                elif C2["time"][-1] >= launch_delay*7 and "drone8" not in drones.keys():
+                    drone8_gnc = GuidanceSystem(drone8, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                    drones["drone8"] = drone8_gnc
 
                 for drone_name, drone_gnc in drones.items():
                     if not drone_gnc.crashed:

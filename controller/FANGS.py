@@ -101,7 +101,7 @@ class GuidanceSystem:
         self.time = [time]
 
         # Initialize user commands and internal variables
-        self.command = self.userCommand(self.v_BN_W[0], self.gamma[0], self.sigma[0])
+        self.command = self.userCommand(self.v_BN_W[0], self.gamma[0], self.sigma[0], self.h[0])
         self.v_BN_W_c_hist = [0]
         self.gamma_c_hist = [0]
         self.sigma_c_hist = [0]
@@ -126,7 +126,7 @@ class GuidanceSystem:
         self.Thrust = [self.drag[0]]
 
     class userCommand:
-        def __init__(self, v_BN_W, gamma, sigma):
+        def __init__(self, v_BN_W, gamma, sigma, h):
             self.time = 0
             self.v_BN_W = v_BN_W
             self.gamma = gamma
@@ -136,7 +136,8 @@ class GuidanceSystem:
             self.sigma_history = [sigma]
             self.airspeed = utils.wind_vector(v_BN_W, gamma, sigma)
             self.airspeed_history = [self.airspeed]
-        
+            self.h_ref = h
+
         def save_history(self):
             self.v_BN_W_history.append(self.v_BN_W)
             self.gamma_history.append(self.gamma)
@@ -170,6 +171,9 @@ class GuidanceSystem:
 
         # Update time since last command
         self.command.time = self.time[-1]
+
+        # Update the command reference heigh
+        self.command.h_ref = self.h[-1]
 
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
@@ -345,7 +349,7 @@ class GuidanceSystem:
         self.alpha_c.append(alpha_c)
 
         # Calculate altitude command (h_c)
-        h_c = np.sin(self.command.gamma) * self.command.v_BN_W * (self.time[-1] + dt) + self.h[0]
+        h_c = np.sin(self.command.gamma) * self.command.v_BN_W * (self.time[-1] + dt) + self.command.h_ref
         self.h_c.append(h_c)
 
         return self.Lift[-1], alpha_c, h_c

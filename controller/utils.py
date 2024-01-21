@@ -82,12 +82,14 @@ def gnc_to_csv(obj, filepath, downsample=1):
                                  'airspeed':obj.airspeed[::downsample],
                                  'lift':obj.Lift[::downsample],
                                  'thrust':obj.Thrust[::downsample],
+                                 'angle_of_attack':obj.alpha[::downsample],
                                  'command_vel':obj.command.v_BN_W_history[::downsample],
                                  'command_gamma':obj.command.gamma_history[::downsample],
                                  'command_sigma':obj.command.sigma_history[::downsample],
                                  'command_airspeed':obj.command.airspeed_history[::downsample],
                                  'command_lift': obj.Lc[::downsample],
-                                 'command_thrust':obj.Tc[::downsample]})
+                                 'command_thrust':obj.Tc[::downsample],
+                                 'command_angle_of_attack':obj.alpha_c[::downsample]})
     df.to_csv(filepath, index=False)
 
 
