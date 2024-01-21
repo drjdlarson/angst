@@ -68,7 +68,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         "T_max": 30,
         "K_Lmax": 0.26,
         "mu_max": 45 * utils.d2r,
-        "C_Do": 0.02,
+        "C_Do": 0.05,
         "C_Lalpha": 0.5 / utils.d2r,
         "alpha_o": -0.1 * utils.d2r,
         "wing_area": 8,
@@ -99,14 +99,13 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         "v_WN_N": [0 * utils.knts2fps, 0 * utils.knts2fps, 0],
         "weight": 80,
     }
-    
 
     # Drone PI Guidance Transfer Functions
     TF_constants = {
-        "K_Tp": 0.2,
-        "K_Ti": 0.01,
+        "K_Tp": 0.2,  # 0.2
+        "K_Ti": 0.01,  # 0.01
         "K_Lp": 0.5,
-        "K_Li": 0.01,
+        "K_Li": 0.01,  # 0.01
         "K_mu_p": 0.075,
     }
 
@@ -259,7 +258,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
             # track_builders[drone_name].to_csv(f'{drone_name}_ideal_track.csv', downsample=10)
             # utils.gnc_to_csv(drone_gnc, f'{drone_name}_ideal_lla.csv')
             track_builders[drone_name].to_csv(f'{drone_name}_noisy_track.csv', downsample=10)
-            utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_lla.csv')
+            utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_dronedata.csv')
 
     with utils.Timer('saving_track_plot'):
         fig, (ax_brg, ax_elv, ax_rng) = plt.subplots(3)

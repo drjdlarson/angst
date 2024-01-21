@@ -80,10 +80,14 @@ def gnc_to_csv(obj, filepath, downsample=1):
                                  'gamma':obj.gamma[::downsample],
                                  'sigma':obj.sigma[::downsample],
                                  'airspeed':obj.airspeed[::downsample],
+                                 'lift':obj.Lift[::downsample],
+                                 'thrust':obj.Thrust[::downsample],
                                  'command_vel':obj.command.v_BN_W_history[::downsample],
                                  'command_gamma':obj.command.gamma_history[::downsample],
                                  'command_sigma':obj.command.sigma_history[::downsample],
-                                 'command_airspeed':obj.command.airspeed_history[::downsample]})
+                                 'command_airspeed':obj.command.airspeed_history[::downsample],
+                                 'command_lift': obj.Lc[::downsample],
+                                 'command_thrust':obj.Tc[::downsample]})
     df.to_csv(filepath, index=False)
 
 
@@ -172,16 +176,26 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPl
     ax_coords.set_ylabel('Longitude (deg)')
     ax_coords.grid(visible='True')
 
-    # Plot results (forces)
+    # Plot results (thrust and drag)
     fig_forces, ax_forces = plt.subplots(1)
     ax_forces.plot(acft_Guidance.time, acft_Guidance.Tc, label='Thrust Command')
     ax_forces.plot(acft_Guidance.time, acft_Guidance.Thrust, label='Thrust Response')
     ax_forces.plot(acft_Guidance.time, acft_Guidance.drag, label='Drag Response')
-    ax_forces.set_title('Forces')
+    ax_forces.set_title('Thrust and Drag')
     ax_forces.set_xlabel('Time (s)')
-    ax_forces.set_ylabel('Forces (lbs)')
+    ax_forces.set_ylabel('Force (lbs)')
     ax_forces.legend()
     ax_forces.grid(visible='True')
+
+    # Plot results (lift)
+    fig_lift, ax_lift = plt.subplots(1)
+    ax_lift.plot(acft_Guidance.time, acft_Guidance.Lc, label='Lift Command')
+    ax_lift.plot(acft_Guidance.time, acft_Guidance.Lift, label='Lift Response')
+    ax_lift.set_title('Lift')
+    ax_lift.set_xlabel('Time (s)')
+    ax_lift.set_ylabel('Force (lbs)')
+    ax_lift.legend()
+    ax_lift.grid(visible='True')
 
     # Plot results (bank angle)
     fig_bank, ax_bank = plt.subplots(1)
@@ -207,6 +221,7 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPl
             fig_hgt.savefig(saveFolder+'\\'+filePrefix+'hgt.png')
             fig_coords.savefig(saveFolder+'\\'+filePrefix+'coords.png')
             fig_forces.savefig(saveFolder+'\\'+filePrefix+'forces.png')
+            fig_lift.savefig(saveFolder+'\\'+filePrefix+'lift.png')
             fig_bank.savefig(saveFolder+'\\'+filePrefix+'bank.png')
 
     # Show plots

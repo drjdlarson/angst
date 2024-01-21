@@ -108,9 +108,8 @@ class GuidanceSystem:
         self.units = self.Vehicle.units  # Adopt units from vehicle at init
         self.angles = self.Vehicle.angles  # Adopt angle units from vehicle at init
         self.V_err = 0
-        self.xT = 0  # Initial V_err should be 0 -> xT = 0
         self.hdot_err = 0
-        self.xL = 0  # Initial h_dot should be 0 -> xL = 0
+        self.xL = self.weight[0] / self.K_Li  # Lc = K_Li*xL + K_Lp*m*hdot_err
         self.Lc = [self.weight[0]]  # Command it to maintain lift at equilibrium
         self.Lift = [self.weight[0]]  # Assuming equilibrium
         self.h_c = [self.h[0]]
@@ -122,6 +121,7 @@ class GuidanceSystem:
         self.alpha_c = [self.alpha[0]]
         self.drag = [self._calculateDrag()]
         self.mu = [self._calculateMu()]
+        self.xT = self.drag[0] / self.K_Ti  # Tc = K_Ti*xT + K_Tp*m*V_err
         self.Tc = [self.drag[0]]
         self.Thrust = [self.drag[0]]
 
@@ -326,12 +326,12 @@ class GuidanceSystem:
         # Evaluate ODE x_L_dot = m*h_dot_err via RK45 to receive x_L for Lift Command calculation
         sol = solve_ivp(self.__xL_dot_ode, [self.time[-1], self.time[-1] + dt], [xL_old], method='RK45')
         self.xL = sol.y[-1][-1]
-        self.Lc = self.K_Li*self.xL + self.K_Lp*self.mass[-1]*self.hdot_err
+        self.Lc.append(self.K_Li*self.xL + self.K_Lp*self.mass[-1]*self.hdot_err)
 
         # Saturation (upper/lower limits on commanded lift)
-        if self.Lc > L_max:
+        if self.Lc[-1] > L_max:
             # print(f'({self.Vehicle.aircraftID}) Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
-            self.Lc = L_max
+            self.Lc[-1] = L_max
 
         # Calculate lift
         sol = solve_ivp(self.__L_dot_ode, [self.time[-1], self.time[-1] + dt], [self.Lift[-1]], method='RK45')
@@ -341,7 +341,7 @@ class GuidanceSystem:
             self.Lift[-1] = L_max
 
         # Calculate commanded angle of attack (alpha_c)
-        alpha_c = 2 * self.Lc / (utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2) + self.Vehicle.alpha_o
+        alpha_c = 2 * self.Lc[-1] / (utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2) + self.Vehicle.alpha_o
         self.alpha_c.append(alpha_c)
 
         # Calculate altitude command (h_c)
@@ -379,7 +379,7 @@ class GuidanceSystem:
 
     def __xL_dot_ode(self, t, xL): return self.mass[-1] * self.hdot_err
 
-    def __L_dot_ode(self, t, L): return -1*self.Vehicle.omega_L*L + self.Vehicle.omega_L*self.Lc
+    def __L_dot_ode(self, t, L): return -1*self.Vehicle.omega_L*L + self.Vehicle.omega_L*self.Lc[-1]
 
     def __m_dot_ode(self, t, m): return -1*self.Vehicle.Kf * self.Thrust[-1]
 
