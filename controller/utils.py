@@ -60,6 +60,15 @@ def get_bearing(lat1, long1, lat2, long2):
     return brng
 
 
+def get_distance(lat1, long1, lat2, long2):
+    dlon = math.radians(long2) - math.radians(long1)
+    dlat = math.radians(lat2) - math.radians(lat1)
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance = Re_bar * c
+    return distance
+
+
 def wind_vector(v_BN_W, gamma, sigma):
     u_inf = v_BN_W * np.cos(gamma) * np.cos(sigma)
     v_inf = v_BN_W * np.cos(gamma) * np.sin(sigma)

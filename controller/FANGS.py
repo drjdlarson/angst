@@ -338,28 +338,27 @@ class GuidanceSystem:
             user-designated flyover point (if set).
         """
         # Needed are the velocity, flight-path angle, and heading
-
-        # velocity
-        velocity = self.command.groundspeed()
-
-        # flight path angle
-        # Need to calculate some angle between where the aircraft currently is and the altitude it needs to be at
-        current_alt = self.h[-1]
-        required_alt = self.command.altitude()
-        maximum_glideslope = 30  # degrees
-        delta = self.required_alt - current_alt
-        alpha = np.arctan2(delta, 250)  # hard-code 250 feet as adjacent in TOA
-        # saturate at 30 degrees glide slope
-        if abs(alpha) > 30:
-            alpha = np.sign(alpha) * 30
-        flight_path_angle = alpha
-
-        # heading
-        current_hdg = self.sigma
         lat = self.lat[-1]
         lon = self.lon[-1]
         required_lat = self.command.waypoint[0]
         required_lon = self.command.waypoint[1]
+
+        # velocity - Fly as fast as possible until within 1500 feet
+        if utils.get_distance(lat, lon, required_lat, required_lon) > 1500:
+            velocity = self.Vehicle.speed_max
+        else:
+            velocity = self.command.groundspeed()
+
+        # flight path angle
+        # Need to calculate some angle between where the aircraft currently is and the altitude it needs to be at
+        maximum_glideslope = 30  # degrees
+        alpha = np.arctan2(self.command.altitude - self.h[-1], 250)  # hard-code 250 feet as adjacent in TOA
+        # saturate at 30 degrees glide slope
+        if abs(alpha) > maximum_glideslope:
+            alpha = np.sign(alpha) * 30
+        flight_path_angle = alpha
+
+        # heading
         heading = utils.get_bearing(lat, lon, required_lat, required_lon)
 
         self.command._change_type = False  # Don't change to a trajectory controller and lose current commands

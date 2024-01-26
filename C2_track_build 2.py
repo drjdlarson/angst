@@ -119,7 +119,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
     """ RUN THE SIMULATION """
     runSim = True  # Set to True to run the simulation, or False to load .pkl files from previous simulations
-    verbose = False  # Set to True to get a lot of outputs
+    verbose = True  # Set to True to get a lot of outputs
 
     if runSim:
         with utils.Timer(f"simulate_{stopTime}_s_drone_flight"):
@@ -129,24 +129,26 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 if C2["time"][-1] >= launch_delay*1 and "drone2" not in drones.keys():
                     drone2_gnc = GuidanceSystem(drone2, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
                     drones["drone2"] = drone2_gnc
-                # elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
-                #     drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone3"] = drone3_gnc
-                # elif C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
-                #     drone4_gnc = GuidanceSystem(drone4, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone4"] = drone4_gnc
-                # elif C2["time"][-1] >= launch_delay*4 and "drone5" not in drones.keys():
-                #     drone5_gnc = GuidanceSystem(drone5, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone5"] = drone5_gnc
-                # elif C2["time"][-1] >= launch_delay*5 and "drone6" not in drones.keys():
-                #     drone6_gnc = GuidanceSystem(drone6, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone6"] = drone6_gnc
-                # elif C2["time"][-1] >= launch_delay*6 and "drone7" not in drones.keys():
-                #     drone7_gnc = GuidanceSystem(drone7, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone7"] = drone7_gnc
-                # elif C2["time"][-1] >= launch_delay*7 and "drone8" not in drones.keys():
-                #     drone8_gnc = GuidanceSystem(drone8, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                #     drones["drone8"] = drone8_gnc
+                """ other drones
+                    elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
+                        drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                        drones["drone3"] = drone3_gnc
+                    elif C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
+                        drone4_gnc = GuidanceSystem(drone4, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                        drones["drone4"] = drone4_gnc
+                    elif C2["time"][-1] >= launch_delay*4 and "drone5" not in drones.keys():
+                        drone5_gnc = GuidanceSystem(drone5, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                        drones["drone5"] = drone5_gnc
+                    elif C2["time"][-1] >= launch_delay*5 and "drone6" not in drones.keys():
+                        drone6_gnc = GuidanceSystem(drone6, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                        drones["drone6"] = drone6_gnc
+                    elif C2["time"][-1] >= launch_delay*6 and "drone7" not in drones.keys():
+                        drone7_gnc = GuidanceSystem(drone7, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                        drones["drone7"] = drone7_gnc
+                    elif C2["time"][-1] >= launch_delay*7 and "drone8" not in drones.keys():
+                        drone8_gnc = GuidanceSystem(drone8, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                        drones["drone8"] = drone8_gnc
+                """
 
                 for drone_name, drone_gnc in drones.items():
                     if not drone_gnc.crashed:
@@ -155,22 +157,16 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
                         # Command the drone if it is time to do so
                         if drone_gnc.time[-1] >= 20*cmdtime+drone_gnc.time[0] and drone_gnc.command.time == 0:
-                            np.random.seed(drone_gnc.Vehicle.aircraftID)
-                            vel = np.random.randint(drone_gnc.Vehicle.speed_min+10, drone_gnc.Vehicle.speed_max-15) * utils.knts2fps
-                            np.random.seed(drone_gnc.Vehicle.aircraftID)
-                            roc = np.random.randint(-5, 5) * utils.d2r
-                            np.random.seed(drone_gnc.Vehicle.aircraftID)
-                            hdg = np.random.randint(0, 359) * utils.d2r
-                            if hdg < 185 and hdg > 175:
-                                hdg = 180 + np.sign(hdg)*5  # Avoid hitting the C2 - HOVER ONLY LOGIC
-                            # drone_gnc.setCommandTrajectory(vel, roc, hdg)
-                            drone_gnc.setFlyoverCommand(100, 4000, (45, 45))
-                            if drone_gnc.verbose: print(f'---\nCommanding {drone_name}:\n > Velocity: {vel/utils.knts2fps} knt\n > Flight Path Angle: {roc/utils.d2r} deg\n > Heading: {hdg/utils.d2r} deg\n > Drone Time: {drone_gnc.time[-1]}')
+                            vel = 30/utils.knts2fps  # 30 knts for surveillance
+                            alt = 4000  # 4000 ft MSL
+                            target_flyover = (36 + 31.822/60, -112 + -3.456/60)  #  36° 31.822'N, 112° 3.456'W
+                            drone_gnc.setFlyoverCommand(vel, alt, target_flyover)
+                            if drone_gnc.verbose: print(f'---\nCommanding {drone_name}:\n > Velocity: {vel} knt\n > Altitude: {alt} ft\n > Waypoint: {target_flyover} deg\n > Drone Time: {drone_gnc.time[-1]}')
 
                         # Attempt to rescue the drone if it is flying too high or too low
                         if drone_gnc.h[-1] <= minimum_altitude or drone_gnc.h[-1] >= maximum_altitude:
                             # Level off the aircraft
-                            if drone_gnc.verbose: print(f'{drone_name} altitude = {drone_gnc.h[-1]}, commanding 0 degree rate of climb (level off).')
+                            # if drone_gnc.verbose: print(f'{drone_name} altitude = {drone_gnc.h[-1]}, commanding 0 degree rate of climb (level off).')
                             drone_gnc.setCommandTrajectory(drone_gnc.command.v_BN_W_history[-1], 0, drone_gnc.command.sigma_history[-1])
 
                         # Oops, the drone died
@@ -226,8 +222,6 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 drones[f'drone{drone}'] = utils.load_obj(f'drone{drone}.pkl')
             # print(drones.items())
 
-    return
-
     with utils.Timer(f"track_drone_targets"):
         track_builders = {}
         for drone_name, drone_gnc in drones.items():
@@ -247,8 +241,8 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
             # track_builders[drone_name].to_csv(f'{drone_name}_ideal_track.csv', downsample=10)
             # utils.gnc_to_csv(drone_gnc, f'{drone_name}_ideal_lla.csv')
-            track_builders[drone_name].to_csv(f'{drone_name}_noisy_track.csv', downsample=10)
-            utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_dronedata.csv')
+            track_builders[drone_name].to_csv(f'{drone_name}_noisy_track_2.csv', downsample=10)
+            utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_dronedata_2.csv')
 
     with utils.Timer('saving_track_plot'):
         fig, (ax_brg, ax_elv, ax_rng) = plt.subplots(3)
@@ -267,16 +261,16 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         ax_elv.axes.get_xaxis().set_visible(False)
         ax_elv.grid(visible='True')
         ax_rng.grid(visible='True')
-        fig.savefig(f'noisy_{len(track_builders.keys())}_tracks.png')
+        fig.savefig(f'noisy_{len(track_builders.keys())}_tracks_2.png')
     fig.show()
 
     if runSim:
         with utils.Timer('saving_drone_flight_objs'):
             for drone_name, drone_gnc in drones.items():
-                utils.save_obj(drone_gnc, f'testing_{drone_name}.pkl')
+                utils.save_obj(drone_gnc, f'abs_command_{drone_name}.pkl')
 
     return
 
 
 if __name__ == "__main__":
-    run_C2(stopTime=6*60)
+    run_C2(stopTime=15*60)
