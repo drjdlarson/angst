@@ -344,7 +344,7 @@ class GuidanceSystem:
         required_lon = self.command.waypoint[1]
 
         # velocity - Fly as fast as possible until within 1500 feet
-        if utils.get_distance(lat, lon, required_lat, required_lon) > 1500:
+        if utils.get_distance(lat, lon, required_lat, required_lon, units=self.angles) > 1500:
             velocity = self.Vehicle.speed_max
         else:
             velocity = self.command.groundspeed()
@@ -359,7 +359,7 @@ class GuidanceSystem:
         flight_path_angle = alpha
 
         # heading
-        heading = utils.get_bearing(lat, lon, required_lat, required_lon)
+        heading = utils.get_bearing(lat, lon, required_lat, required_lon, units=self.angles)
 
         self.command._change_type = False  # Don't change to a trajectory controller
         self.setCommandTrajectory(velocity, flight_path_angle, heading)
