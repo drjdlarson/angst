@@ -144,6 +144,7 @@ class GuidanceSystem:
     class userCommand:
         def __init__(self, v_BN_W, gamma, sigma, h):
             self.time = 0
+            self.guidance_command_time = 0
             self.v_BN_W = v_BN_W
             self.gamma = gamma
             self.sigma = sigma
@@ -160,11 +161,12 @@ class GuidanceSystem:
             self.waypoint = (np.nan, np.nan)
             self.groundspeed_history = [np.nan]
             self.altitude_history = [np.nan]
-            self.waypoint_history = [np.nan]
+            self.waypoint_history = [(np.nan, np.nan)]
 
             # Flag what kind of command is operating:
             #   Currently accepted states: "trajectory", "flyover"
             self._command_type = "trajectory"
+            self._change_type = True
 
         def save_history(self):
             self.v_BN_W_history.append(self.v_BN_W)
@@ -175,7 +177,7 @@ class GuidanceSystem:
             self.altitude_history.append(self.altitude)
             self.waypoint_history.append(self.waypoint)
 
-    def setCommandTrajectory(self, velocity, flight_path_angle, heading, change_type=True):
+    def setCommandTrajectory(self, velocity, flight_path_angle, heading):
         """ Set a user-defined commanded aircraft trajectory
         
         Note: This command will come into effect on the next iteration of the guidance system.
@@ -209,11 +211,11 @@ class GuidanceSystem:
         self.command.h_ref = self.h[-1]
 
         # Update the system operating command type
-        if change_type:
-            self._command_type = "trajectory"
+        if self.command._change_type:
+            self.command._command_type = "trajectory"
 
 
-    def setFlyoverCommand(self, groundspeed, altitude, waypoint, change_type=True):
+    def setFlyoverCommand(self, groundspeed, altitude, waypoint):
         """ Set a user-defined commanded fly-over point
         
         Note: This command will come into effect on the next iteration of the guidance system.
@@ -243,15 +245,14 @@ class GuidanceSystem:
         # self.sigma_err = self.command.sigma - self.sigma[-1]
 
         # Update time since last command
-        self.command.time = self.time[-1]
+        self.command.guidance_command_time = self.time[-1]
 
-        # Update the command reference heigh
+        # Update the command reference height
         self.command.h_ref = self.h[-1]
 
         # Update the system operating command type
-        if change_type:
+        if self.command._change_type:
             self.command._command_type = "flyover"
-
 
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
@@ -275,7 +276,7 @@ class GuidanceSystem:
             dt = self.dt
 
         if self.command._command_type == "flyover":
-            self._calculateTrajectory()
+            self._setTrajectory()
 
         self._thrustGuidanceSystem(dt)
         self._liftGuidanceSystem(dt)
@@ -332,11 +333,38 @@ class GuidanceSystem:
             self.time.append(self.time[-1] + dt)
             self.command.save_history()
 
-    def _calculateTrajectory(self):
+    def _setTrajectory(self):
         """ A proportional controller to calculate the required trajectory commands to meet the
             user-designated flyover point (if set).
         """
         # Needed are the velocity, flight-path angle, and heading
+
+        # velocity
+        velocity = self.command.groundspeed()
+
+        # flight path angle
+        # Need to calculate some angle between where the aircraft currently is and the altitude it needs to be at
+        current_alt = self.h[-1]
+        required_alt = self.command.altitude()
+        maximum_glideslope = 30  # degrees
+        delta = self.required_alt - current_alt
+        alpha = np.arctan2(delta, 250)  # hard-code 250 feet as adjacent in TOA
+        # saturate at 30 degrees glide slope
+        if abs(alpha) > 30:
+            alpha = np.sign(alpha) * 30
+        flight_path_angle = alpha
+
+        # heading
+        current_hdg = self.sigma
+        lat = self.lat[-1]
+        lon = self.lon[-1]
+        required_lat = self.command.waypoint[0]
+        required_lon = self.command.waypoint[1]
+        heading = utils.get_bearing(lat, lon, required_lat, required_lon)
+
+        self.command._change_type = False  # Don't change to a trajectory controller and lose current commands
+        self.setCommandTrajectory(velocity, flight_path_angle, heading)
+        self.command._change_type = True  # Do no harm
         return
 
     def _getEquationsOfMotion_Ideal(self, dt=None):

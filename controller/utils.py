@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 """ Utility functions for FANGS.py script
 
-    v1.1.0 Notes:
-        1. Added saveTrack
-        2. Added read_kml_coordinates
-        3. Added write_kml_coordinates
+    v1.2.0 Notes:
+        1. Added get_bearing
 """
 __author__ = "Alex Springer"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
 import numpy as np
 import time
+import math
 import pickle
 import scipy.linalg as la
 import matplotlib.pyplot as plt
@@ -50,6 +49,15 @@ def get_point_at_distance(lat1, lon1, dist, bearing):
         np.cos(dist/Re_bar) - np.sin(lat1) * np.sin(lat2)
     )
     return lat2, lon2
+
+
+def get_bearing(lat1, long1, lat2, long2):
+    dLon = (long2 - long1)
+    x = math.cos(math.radians(lat2)) * math.sin(math.radians(dLon))
+    y = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) - math.sin(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.cos(math.radians(dLon))
+    brng = np.arctan2(x,y)
+    brng = np.degrees(brng)
+    return brng
 
 
 def wind_vector(v_BN_W, gamma, sigma):
