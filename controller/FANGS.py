@@ -351,17 +351,17 @@ class GuidanceSystem:
 
         # flight path angle
         # Need to calculate some angle between where the aircraft currently is and the altitude it needs to be at
-        maximum_glideslope = 30  # degrees
+        maximum_glideslope = 25  # degrees
         alpha = np.arctan2(self.command.altitude - self.h[-1], 250)  # hard-code 250 feet as adjacent in TOA
         # saturate at 30 degrees glide slope
         if abs(alpha) > maximum_glideslope:
-            alpha = np.sign(alpha) * 30
+            alpha = np.sign(alpha) * maximum_glideslope
         flight_path_angle = alpha
 
         # heading
         heading = utils.get_bearing(lat, lon, required_lat, required_lon)
 
-        self.command._change_type = False  # Don't change to a trajectory controller and lose current commands
+        self.command._change_type = False  # Don't change to a trajectory controller
         self.setCommandTrajectory(velocity, flight_path_angle, heading)
         self.command._change_type = True  # Do no harm
         return

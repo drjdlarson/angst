@@ -159,7 +159,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                         if drone_gnc.time[-1] >= 20*cmdtime+drone_gnc.time[0] and drone_gnc.command.time == 0:
                             vel = 30/utils.knts2fps  # 30 knts for surveillance
                             alt = 4000  # 4000 ft MSL
-                            target_flyover = (36 + 31.822/60, -112 + -3.456/60)  #  36° 31.822'N, 112° 3.456'W
+                            target_flyover = ((36 + 31.822/60)*utils.d2r, (-112 + -3.456/60)*utils.d2r)   #  36° 31.822'N, 112° 3.456'W
                             drone_gnc.setFlyoverCommand(vel, alt, target_flyover)
                             if drone_gnc.verbose: print(f'---\nCommanding {drone_name}:\n > Velocity: {vel} knt\n > Altitude: {alt} ft\n > Waypoint: {target_flyover} deg\n > Drone Time: {drone_gnc.time[-1]}')
 

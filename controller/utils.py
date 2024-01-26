@@ -51,18 +51,29 @@ def get_point_at_distance(lat1, lon1, dist, bearing):
     return lat2, lon2
 
 
-def get_bearing(lat1, long1, lat2, long2):
+def get_bearing(lat1, long1, lat2, long2, units="Radians"):
+    if units == "Degrees":
+        lat1 = math.radians(lat1)
+        long1 = math.radians(long1)
+        lat2 = math.radians(lat2)
+        long2 = math.radians(long2)
     dLon = (long2 - long1)
-    x = math.cos(math.radians(lat2)) * math.sin(math.radians(dLon))
-    y = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) - math.sin(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.cos(math.radians(dLon))
+    x = math.cos(lat2) * math.sin(dLon)
+    y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dLon)
     brng = np.arctan2(x,y)
-    brng = np.degrees(brng)
+    if units == "Degrees":
+        brng = np.degrees(brng)
     return brng
 
 
-def get_distance(lat1, long1, lat2, long2):
-    dlon = math.radians(long2) - math.radians(long1)
-    dlat = math.radians(lat2) - math.radians(lat1)
+def get_distance(lat1, long1, lat2, long2, units="Radians"):
+    if units == "Degrees":
+        lat1 = math.radians(lat1)
+        long1 = math.radians(long1)
+        lat2 = math.radians(lat2)
+        long2 = math.radians(long2)
+    dlon = long2 - long1
+    dlat = lat2 - lat1
     a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     distance = Re_bar * c
