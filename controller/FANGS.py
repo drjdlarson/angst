@@ -115,6 +115,7 @@ class GuidanceSystem:
 
         # Set vehicle GNC initiation time
         self.time = [time]
+        self.ii = 0
 
         # Initialize user commands and internal variables
         self.command = self.userCommand(self.v_BN_W[0], self.gamma[0], self.sigma[0], self.h[0])
@@ -243,6 +244,7 @@ class GuidanceSystem:
         # self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
         # self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
         # self.sigma_err = self.command.sigma - self.sigma[-1]
+        self.toggleA = True
 
         # Update time since last command
         self.command.guidance_command_time = self.time[-1]
@@ -253,6 +255,9 @@ class GuidanceSystem:
         # Update the system operating command type
         if self.command._change_type:
             self.command._command_type = "flyover"
+
+        if self.verbose:
+            print(f'Commanding Aircraft {self.Vehicle.aircraftID} at time {self.time[-1]}:\n > Groundspeed: {groundspeed} fps\n > Altitude: {altitude} ft MSL\n > Waypoint: {waypoint} {self.angles}')
 
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
@@ -281,6 +286,8 @@ class GuidanceSystem:
         self._thrustGuidanceSystem(dt)
         self._liftGuidanceSystem(dt)
         self._headingGuidanceSystem(dt)
+
+        self.ii += 1
 
     def updateSystemState(self, mass=None, v_BN_W=None, gamma=None, sigma=None, lat=None, lon=None, h=None, airspeed=None, alpha=None, drag=None, dt=None):
         """ User-supplied state update before asking for next guidance system command.
@@ -343,27 +350,61 @@ class GuidanceSystem:
         required_lat = self.command.waypoint[0]
         required_lon = self.command.waypoint[1]
 
-        # velocity - Fly as fast as possible until within 1500 feet
-        if utils.get_distance(lat, lon, required_lat, required_lon, units=self.angles) > 1500:
-            velocity = self.Vehicle.speed_max
-        else:
-            velocity = self.command.groundspeed()
-
         # flight path angle
         # Need to calculate some angle between where the aircraft currently is and the altitude it needs to be at
-        maximum_glideslope = 25  # degrees
-        alpha = np.arctan2(self.command.altitude - self.h[-1], 250)  # hard-code 250 feet as adjacent in TOA
+        maximum_glideslope = 25 * utils.d2r  # radians
+        adj = 5280  # hard-code 1 mile as adjacent in TOA
+        alpha = np.arctan2(self.command.altitude - self.h[-1], adj)
         # saturate at 30 degrees glide slope
         if abs(alpha) > maximum_glideslope:
-            alpha = np.sign(alpha) * maximum_glideslope
-        flight_path_angle = alpha
+            alpha_sat = np.sign(alpha) * maximum_glideslope
+        elif abs(alpha) < 3 * utils.d2r:
+            alpha_sat = 0
+        else:
+            alpha_sat = alpha + np.sign(alpha) * 0.05 * alpha
+        flight_path_angle = alpha_sat
+
+        # velocity - Fly as fast as possible until within 1 mile
+        # First, however, change altitude--then speed up
+        dist_from_target = utils.get_distance(lat, lon, required_lat, required_lon, units=self.angles)
+        slowdown_radius = 2*5280  # 2 mile
+        if alpha_sat == 0:
+            # Once altitude is stabilized, set the required groundspeed
+            if dist_from_target > slowdown_radius:
+                velocity = self.Vehicle.speed_max - 15
+            else:
+                if abs(self.airspeed[-1] - self.command.groundspeed) < 5:
+                    velocity = self.command.groundspeed
+                else:
+                    velocity = 0.05 * (self.command.groundspeed - self.airspeed[-1]) + self.airspeed[-1]
+                    # print(velocity)
+                # if self.verbose and self.toggleA:
+                #     print(f'({self.ii, self.time[-1]}) Aircraft ID {self.Vehicle.aircraftID}: Within {slowdown_radius/5280} miles of target, setting velocity to {velocity}')
+                #     self.toggleA = False
+        else:
+            # Whenever altitude is being stabilized, just maintain velocity
+            velocity = self.airspeed[-1]
 
         # heading
         heading = utils.get_bearing(lat, lon, required_lat, required_lon, units=self.angles)
 
-        self.command._change_type = False  # Don't change to a trajectory controller
-        self.setCommandTrajectory(velocity, flight_path_angle, heading)
-        self.command._change_type = True  # Do no harm
+        if dist_from_target < 300:
+            # Let go of user command
+            self.setCommandTrajectory(velocity, flight_path_angle, heading)
+        else:
+            self.command._change_type = False  # Don't change to a trajectory controller
+            self.setCommandTrajectory(velocity, flight_path_angle, heading)
+            self.command._change_type = True  # Do no harm
+
+        if self.verbose and self.ii % 5000 == 0:
+            print(f'({self.ii, self.time[-1]}) Aircraft ID {self.Vehicle.aircraftID}:\n > currently located at [{lat}, {lon}] {self.angles}\n > commanded to [{required_lat}, {required_lon}] {self.angles}')
+            print(f' > currently {dist_from_target} feet from the target')
+            print(f' > current velocity is {self.v_BN_W[-1]} fps\n > commanded to {velocity} fps')
+            print(f' > current altitude {self.h[-1]} ft\n > commanded altitude to {self.command.altitude} ft')
+            print(f' > tangent angle to desired altitude is {alpha} {self.angles}')
+            print(f' > setting alpha (glideslope) to {alpha_sat} {self.angles}')
+            print(f' > current heading is {self.sigma[-1]} {self.angles}\n > commanded heading to {heading} {self.angles}')
+
         return
 
     def _getEquationsOfMotion_Ideal(self, dt=None):
@@ -407,6 +448,7 @@ class GuidanceSystem:
     def _thrustGuidanceSystem(self, dt):
         xT_old = self.xT
         self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
+        # print((xT_old, self.V_err))
 
         # Evaluate ODE x_T_dot = m*V_err via RK45 to receive x_T for new velocity error
         sol = solve_ivp(self.__xT_dot_ode, [self.time[-1], self.time[-1] + dt], [xT_old], method='RK45')
@@ -420,6 +462,7 @@ class GuidanceSystem:
             # print(f'({self.Vehicle.aircraftID}) Commanded thrust {self.Tc} exceeds max thrust {self.Vehicle.T_max}')
             self.Tc[-1] = self.Vehicle.T_max
         elif self.Tc[-1] < 0:
+            # print(self.Tc[-1])
             self.Tc[-1] = 0
 
         sol = solve_ivp(self.__T_dot_ode, [self.time[-1], self.time[-1] + dt], [self.Thrust[-1]], method='RK45')

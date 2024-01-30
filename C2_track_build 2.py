@@ -28,7 +28,7 @@ import random
 rng_seed = 7
 
 def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
-    verbose = False
+    verbose = True
 
     # Define the aircraft (C2) -- Assume it's in a perfect hover for now
     C2 = {
@@ -89,7 +89,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
     # Drone PI Guidance Transfer Functions
     TF_constants = {
-        "K_Tp": 0.25,  # 0.2
+        "K_Tp": 0.15,  # 0.2
         "K_Ti": 0.05,  # 0.01
         "K_Lp": 0.3,
         "K_Li": 0.03,  # 0.01
@@ -126,9 +126,9 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
             while C2["time"][-1] < stopTime:
 
                 # Launch a new drone every 5 seconds until there are 8 drones launched
-                if C2["time"][-1] >= launch_delay*1 and "drone2" not in drones.keys():
-                    drone2_gnc = GuidanceSystem(drone2, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
-                    drones["drone2"] = drone2_gnc
+                # if C2["time"][-1] >= launch_delay*1 and "drone2" not in drones.keys():
+                #     drone2_gnc = GuidanceSystem(drone2, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
+                #     drones["drone2"] = drone2_gnc
                 """ other drones
                     elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
                         drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
@@ -155,19 +155,26 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                         np.random.seed(drone_gnc.Vehicle.aircraftID)
                         cmdtime = np.random.rand()
 
+                        # if drone_gnc.ii >= 2100:
+                        #     break
+
                         # Command the drone if it is time to do so
-                        if drone_gnc.time[-1] >= 20*cmdtime+drone_gnc.time[0] and drone_gnc.command.time == 0:
-                            vel = 30/utils.knts2fps  # 30 knts for surveillance
+                        if drone_gnc.time[-1] >= 50*cmdtime+drone_gnc.time[0] and drone_gnc.command.time == 0:
+                            vel = 50*utils.knts2fps  # 50 knts for surveillance
                             alt = 4000  # 4000 ft MSL
                             target_flyover = ((36 + 31.822/60)*utils.d2r, (-112 + -3.456/60)*utils.d2r)   #  36° 31.822'N, 112° 3.456'W
                             drone_gnc.setFlyoverCommand(vel, alt, target_flyover)
-                            if drone_gnc.verbose: print(f'---\nCommanding {drone_name}:\n > Velocity: {vel} knt\n > Altitude: {alt} ft\n > Waypoint: {target_flyover} deg\n > Drone Time: {drone_gnc.time[-1]}')
+                            # if drone_gnc.verbose: print(f'---\nCommanding {drone_name}:\n > Velocity: {vel} knt\n > Altitude: {alt} ft\n > Waypoint: {target_flyover} deg\n > Drone Time: {drone_gnc.time[-1]}')
 
                         # Attempt to rescue the drone if it is flying too high or too low
                         if drone_gnc.h[-1] <= minimum_altitude or drone_gnc.h[-1] >= maximum_altitude:
                             # Level off the aircraft
-                            # if drone_gnc.verbose: print(f'{drone_name} altitude = {drone_gnc.h[-1]}, commanding 0 degree rate of climb (level off).')
-                            drone_gnc.setCommandTrajectory(drone_gnc.command.v_BN_W_history[-1], 0, drone_gnc.command.sigma_history[-1])
+                            if drone_gnc.verbose: print(f'{drone_name} altitude = {drone_gnc.h[-1]}, commanding +/-10 degree rate of climb.')
+                            if drone_gnc.h[-1] >= maximum_altitude:
+                                change_needed = -1
+                            else:
+                                change_needed = 1
+                            drone_gnc.setCommandTrajectory(drone_gnc.command.v_BN_W_history[-1], change_needed*10, drone_gnc.command.sigma_history[-1])
 
                         # Oops, the drone died
                         if drone_gnc.h[-1] <= land_altitude:
@@ -210,7 +217,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                             drag=drag)
 
                 C2["time"].append(C2["time"][-1] + C2["dt"])
-                if len(C2["time"])%500 == 0:
+                if len(C2["time"])%5000 == 0:
                     perc = round(C2["time"][-1]/stopTime*100)
                     print(f'{perc}% complete...')
 
@@ -244,7 +251,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
             track_builders[drone_name].to_csv(f'{drone_name}_noisy_track_2.csv', downsample=10)
             utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_dronedata_2.csv')
 
-    with utils.Timer('saving_track_plot'):
+    with utils.Timer(f'saving_{len(track_builders.keys())}_track_plot'):
         fig, (ax_brg, ax_elv, ax_rng) = plt.subplots(3)
         [ax_brg.plot(track.time, track.target.bearing) for _, track in track_builders.items()]
         [ax_rng.plot(track.time, track.target.range) for _, track in track_builders.items()]
@@ -262,7 +269,6 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         ax_elv.grid(visible='True')
         ax_rng.grid(visible='True')
         fig.savefig(f'noisy_{len(track_builders.keys())}_tracks_2.png')
-    fig.show()
 
     if runSim:
         with utils.Timer('saving_drone_flight_objs'):
@@ -273,4 +279,5 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
 
 if __name__ == "__main__":
-    run_C2(stopTime=15*60)
+    with utils.Timer('OVERALL SIMULATION'):
+        run_C2(stopTime=30*60)
