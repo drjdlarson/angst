@@ -80,6 +80,7 @@ class GuidanceSystem:
                 alpha_o, wing_area, aspect_ratio, wing_eff
         TF_constants : :dict:`Dictionary of PI Guidance transfer function coefficients`
             Required keys: K_Tp, K_Ti, K_Lp, K_Li, K_mu_p
+            Optional keys: K_alpha
         InitialConditions : :dict:`Dictionary of Initial Conditions`
             Required keys: v_BN_W, h, gamma, sigma, lat, lon, v_WN_N, weight
         time : :float:`Time of vehicle GNC initialization`
@@ -97,8 +98,14 @@ class GuidanceSystem:
         self.K_Lp = TF_constants['K_Lp']
         self.K_Li = TF_constants['K_Li']
         self.K_mu_p = TF_constants['K_mu_p']
+        self.K_alpha = 0.05  # Default value for optional parameter: gain for proportional glideslope control
+        self.K_velocity = 0.05  # Default value for optional parameter: gain for proportional velocity control
         self.dt = dt  # Default is 0.01 seconds
         self.Vehicle.dt = self.dt  # Update the Vehicle's default time step
+        if 'K_alpha' in TF_constants.keys():
+            self.K_alpha = TF_constants['K_alpha']
+        if 'K_velocity' in TF_constants.keys():
+            self.K_velocity = TF_constants['K_velocity']
 
         # Set Initial Conditions
         self.time = [time]
@@ -238,13 +245,6 @@ class GuidanceSystem:
         self.command.groundspeed = groundspeed  # Commanded groundspeed
         self.command.altitude = altitude  # Commanded flight path angle
         self.command.waypoint = waypoint  # Commanded heading
-        # self.command.airspeed = utils.wind_vector(self.command.v_BN_W, self.command.gamma, self.command.sigma)
-
-        # Update errors
-        # self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
-        # self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
-        # self.sigma_err = self.command.sigma - self.sigma[-1]
-        self.toggleA = True
 
         # Update time since last command
         self.command.guidance_command_time = self.time[-1]
@@ -345,30 +345,26 @@ class GuidanceSystem:
             user-designated flyover point (if set).
         """
         # Needed are the velocity, flight-path angle, and heading
-        lat = self.lat[-1]
-        lon = self.lon[-1]
-        required_lat = self.command.waypoint[0]
-        required_lon = self.command.waypoint[1]
+        lat_c = self.command.waypoint[0]
+        lon_c = self.command.waypoint[1]
 
-        # flight path angle
-        # Need to calculate some angle between where the aircraft currently is and the altitude it needs to be at
-        maximum_glideslope = 25 * utils.d2r  # radians
-        adj = 5280  # hard-code 1 mile as adjacent in TOA
-        alpha = np.arctan2(self.command.altitude - self.h[-1], adj)
-        # saturate at 30 degrees glide slope
-        if abs(alpha) > maximum_glideslope:
-            alpha_sat = np.sign(alpha) * maximum_glideslope
-        elif abs(alpha) < 3 * utils.d2r:
-            alpha_sat = 0
+        # flight path angle - Get to the correct altitude before adjusting velocity
+        maximum_commandable_glideslope = 15 * utils.d2r  # radians
+        gamma = np.arctan2(self.command.altitude - self.h[-1], 5280)  # glideslope (AKA flight path angle)
+        # saturate at maximum glideslope
+        if abs(gamma) > maximum_commandable_glideslope:
+            gamma_c = np.sign(gamma) * maximum_commandable_glideslope
+        # command a level-out when within tolerance
+        elif abs(gamma) < 3 * utils.d2r:
+            gamma_c = 0
+        # proportional control on glideslope using K_alpha
         else:
-            alpha_sat = alpha + np.sign(alpha) * 0.05 * alpha
-        flight_path_angle = alpha_sat
+            gamma_c = gamma + np.sign(gamma) * self.K_alpha * gamma
 
         # velocity - Fly as fast as possible until within 1 mile
-        # First, however, change altitude--then speed up
-        dist_from_target = utils.get_distance(lat, lon, required_lat, required_lon, units=self.angles)
+        dist_from_target = utils.get_distance(self.lat[-1], self.lon[-1], lat_c, lon_c, units=self.angles)
         slowdown_radius = 2*5280  # 2 mile
-        if alpha_sat == 0:
+        if gamma_c == 0:
             # Once altitude is stabilized, set the required groundspeed
             if dist_from_target > slowdown_radius:
                 velocity = self.Vehicle.speed_max - 15
@@ -376,33 +372,29 @@ class GuidanceSystem:
                 if abs(self.airspeed[-1] - self.command.groundspeed) < 5:
                     velocity = self.command.groundspeed
                 else:
-                    velocity = 0.05 * (self.command.groundspeed - self.airspeed[-1]) + self.airspeed[-1]
-                    # print(velocity)
-                # if self.verbose and self.toggleA:
-                #     print(f'({self.ii, self.time[-1]}) Aircraft ID {self.Vehicle.aircraftID}: Within {slowdown_radius/5280} miles of target, setting velocity to {velocity}')
-                #     self.toggleA = False
+                    velocity = self.K_velocity * (self.command.groundspeed - self.airspeed[-1]) + self.airspeed[-1]
         else:
             # Whenever altitude is being stabilized, just maintain velocity
             velocity = self.airspeed[-1]
 
-        # heading
-        heading = utils.get_bearing(lat, lon, required_lat, required_lon, units=self.angles)
+        # heading - Adjust heading while working on velocity and flight path
+        heading = utils.get_bearing(self.lat[-1], self.lon[-1], lat_c, lon_c, units=self.angles)
 
-        if dist_from_target < 300:
+        if abs(dist_from_target) < 300:
             # Let go of user command
-            self.setCommandTrajectory(velocity, flight_path_angle, heading)
+            self.setCommandTrajectory(velocity, gamma_c, heading)
         else:
             self.command._change_type = False  # Don't change to a trajectory controller
-            self.setCommandTrajectory(velocity, flight_path_angle, heading)
+            self.setCommandTrajectory(velocity, gamma_c, heading)
             self.command._change_type = True  # Do no harm
 
         if self.verbose and self.ii % 5000 == 0:
-            print(f'({self.ii, self.time[-1]}) Aircraft ID {self.Vehicle.aircraftID}:\n > currently located at [{lat}, {lon}] {self.angles}\n > commanded to [{required_lat}, {required_lon}] {self.angles}')
+            print(f'({self.ii, self.time[-1]}) Aircraft ID {self.Vehicle.aircraftID}:\n > currently located at [{self.lat[-1]}, {self.lon[-1]}] {self.angles}\n > commanded to [{lat_c}, {lon_c}] {self.angles}')
             print(f' > currently {dist_from_target} feet from the target')
             print(f' > current velocity is {self.v_BN_W[-1]} fps\n > commanded to {velocity} fps')
             print(f' > current altitude {self.h[-1]} ft\n > commanded altitude to {self.command.altitude} ft')
-            print(f' > tangent angle to desired altitude is {alpha} {self.angles}')
-            print(f' > setting alpha (glideslope) to {alpha_sat} {self.angles}')
+            print(f' > tangent angle to desired altitude is {gamma} {self.angles}')
+            print(f' > setting alpha (glideslope) to {gamma_c} {self.angles}')
             print(f' > current heading is {self.sigma[-1]} {self.angles}\n > commanded heading to {heading} {self.angles}')
 
         return
