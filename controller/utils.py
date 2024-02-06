@@ -1,11 +1,21 @@
 #!/usr/bin/env python
 """ Utility functions for FANGS.py script
 
-    v1.2.0 Notes:
-        1. Added get_bearing
+    v1.3.0 Notes:
+        1. Updated how plots are made. Added the following commands:
+            plotGroundspeed()
+            plotAirspeed()
+            plotFlightPathAngle()
+            plotHeading()
+            plotAngleOfAttack()
+            plotHeight()
+            plotCoordinates()
+            plotThrustDrag()
+            plotLift()
+            plotBankAngle()
 """
 __author__ = "Alex Springer"
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
