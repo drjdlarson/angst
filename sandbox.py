@@ -1,8 +1,14 @@
 import controller.utils as utils
+import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
-    testing_drone2 = utils.load_obj('testing_drone2.pkl')
-    print(testing_drone2.lat[10], testing_drone2.lon[10], testing_drone2.h[10])
-
-    utils.plotSim(testing_drone2, showPlots=True)
+    num_drones = 8
+    drones = {}
+    for drone in range(num_drones):
+        print(f'Loading drone {drone+1}...')
+        drone_obj = utils.load_obj(f'./saved_simulations/Grand_Canyon_Search_and_Rescue/abs_command_drone{drone+1}.pkl')
+        drones[str(drone+1)] = drone_obj
+    print(drones.items())
+    utils.plotCoordinates(drones)
+    plt.show()

@@ -11,11 +11,18 @@
     At each time step, the guidance system will be updated with commands. The user must then either:
         a. Import state data from measurements
         b. Import state data from a state estimator
+
+    Version notes: v2.0.0
+        This version added changes to the API to allow the user to input an "absolute" command:
+            - Flyover waypoint
+            - Groundspeed
+            - Altitude
+        This adds the capability for the user to designate mission-related commands.
 """
 __author__ = "Alex Springer"
-__version__ = "1.1.0"
+__version__ = "2.0.0"
 __email__ = "springer.alex.h@gmail.com"
-__status__ = "Production"
+__status__ = "Development"
 
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -39,6 +46,11 @@ class GuidanceSystem:
         sigma_c     commanded heading angle clockwise from North
         sigma       current heading angle clockwise from North (output from EOM)
 
+        -- New with version 2.0:
+        waypoint_c  commanded fly-over waypoint
+        altitude_c  commanded aircraft altitude
+        v_GS_c      commanded aircraft groundspeed
+
     Guidance System outputs:
         thrust      magnitude of thrust vector in line with aircraft body
         lift        magnitude of lift vector in line with aircraft z-axis
@@ -54,6 +66,10 @@ class GuidanceSystem:
 
     def __init__(self, vehicle, TF_constants, InitialConditions, time = 0, dt=0.01, verbose=True):
         """ Initialize a fixed-wing nonlinear performance guidance system.
+
+        Note: The aircraft will initialize with a set of steady-state commands designed to
+              keep the aircraft flying at the initialized state. If you need to update the aircraft
+              commands, use either setCommandTrajectory() or setFlyoverCommand()
         
         Parameters
         ----------
@@ -64,6 +80,7 @@ class GuidanceSystem:
                 alpha_o, wing_area, aspect_ratio, wing_eff
         TF_constants : :dict:`Dictionary of PI Guidance transfer function coefficients`
             Required keys: K_Tp, K_Ti, K_Lp, K_Li, K_mu_p
+            Optional keys: K_alpha
         InitialConditions : :dict:`Dictionary of Initial Conditions`
             Required keys: v_BN_W, h, gamma, sigma, lat, lon, v_WN_N, weight
         time : :float:`Time of vehicle GNC initialization`
@@ -81,8 +98,14 @@ class GuidanceSystem:
         self.K_Lp = TF_constants['K_Lp']
         self.K_Li = TF_constants['K_Li']
         self.K_mu_p = TF_constants['K_mu_p']
+        self.K_alpha = 0.05  # Default value for optional parameter: gain for proportional glideslope control
+        self.K_velocity = 0.05  # Default value for optional parameter: gain for proportional velocity control
         self.dt = dt  # Default is 0.01 seconds
         self.Vehicle.dt = self.dt  # Update the Vehicle's default time step
+        if 'K_alpha' in TF_constants.keys():
+            self.K_alpha = TF_constants['K_alpha']
+        if 'K_velocity' in TF_constants.keys():
+            self.K_velocity = TF_constants['K_velocity']
 
         # Set Initial Conditions
         self.time = [time]
@@ -99,6 +122,7 @@ class GuidanceSystem:
 
         # Set vehicle GNC initiation time
         self.time = [time]
+        self.ii = 0
 
         # Initialize user commands and internal variables
         self.command = self.userCommand(self.v_BN_W[0], self.gamma[0], self.sigma[0], self.h[0])
@@ -128,6 +152,7 @@ class GuidanceSystem:
     class userCommand:
         def __init__(self, v_BN_W, gamma, sigma, h):
             self.time = 0
+            self.guidance_command_time = 0
             self.v_BN_W = v_BN_W
             self.gamma = gamma
             self.sigma = sigma
@@ -138,16 +163,32 @@ class GuidanceSystem:
             self.airspeed_history = [self.airspeed]
             self.h_ref = h
 
+            # Add hooks for flyover command
+            self.groundspeed = np.nan
+            self.altitude = np.nan
+            self.waypoint = (np.nan, np.nan)
+            self.groundspeed_history = [np.nan]
+            self.altitude_history = [np.nan]
+            self.waypoint_history = [(np.nan, np.nan)]
+
+            # Flag what kind of command is operating:
+            #   Currently accepted states: "trajectory", "flyover"
+            self._command_type = "trajectory"
+            self._change_type = True
+
         def save_history(self):
             self.v_BN_W_history.append(self.v_BN_W)
             self.gamma_history.append(self.gamma)
             self.sigma_history.append(self.sigma)
             self.airspeed_history.append(self.airspeed)
+            self.groundspeed_history.append(self.groundspeed)
+            self.altitude_history.append(self.altitude)
+            self.waypoint_history.append(self.waypoint)
 
     def setCommandTrajectory(self, velocity, flight_path_angle, heading):
         """ Set a user-defined commanded aircraft trajectory
         
-        The trajectory set using this command will come into effect on the next iteration of the guidance system.
+        Note: This command will come into effect on the next iteration of the guidance system.
 
         Parameters
         ----------
@@ -157,6 +198,8 @@ class GuidanceSystem:
             The flight path angle is the angle at which the aircraft is either climbing (+) or descending (-)
         heading : :float:`(radians) The commanded heading of the aircraft.`
             The heading of the aircraft is defined as clockwise from North.
+        change_type : :boolean:`(True/False) Change the type of user command`
+            This is used internally to avoid resetting the type of command input by the user.
         """
         # Set the new user command
         self.command.v_BN_W = velocity  # Commanded velocity
@@ -174,6 +217,47 @@ class GuidanceSystem:
 
         # Update the command reference heigh
         self.command.h_ref = self.h[-1]
+
+        # Update the system operating command type
+        if self.command._change_type:
+            self.command._command_type = "trajectory"
+
+
+    def setFlyoverCommand(self, groundspeed, altitude, waypoint):
+        """ Set a user-defined commanded fly-over point
+        
+        Note: This command will come into effect on the next iteration of the guidance system.
+
+        WARNING: The altitude is measured from mean sea level, so be sure to account for terrain!
+
+        Parameters
+        ----------
+        groundspeed : :float:`(feet per second) The commanded forward velocity of the aircraft relative to the ground.`
+            Use this command to set the forward airspeed of the aircraft relative to the ground.
+        altitude : :float:`(feet) The commanded altitude of the aircraft.`
+            The altitude is measured from mean sea level, so be sure to account for terrain!
+        waypoint : :tuple:`(radians) The commanded fly-over target point.`
+            Input as (latitude, longitude) in degree decimal format.
+        change_type : :boolean:`(True/False) Change the type of user command`
+            This is used internally to avoid resetting the type of command input by the user.
+        """
+        # Set the new user command
+        self.command.groundspeed = groundspeed  # Commanded groundspeed
+        self.command.altitude = altitude  # Commanded flight path angle
+        self.command.waypoint = waypoint  # Commanded heading
+
+        # Update time since last command
+        self.command.guidance_command_time = self.time[-1]
+
+        # Update the command reference height
+        self.command.h_ref = self.h[-1]
+
+        # Update the system operating command type
+        if self.command._change_type:
+            self.command._command_type = "flyover"
+
+        if self.verbose:
+            print(f'Commanding Aircraft {self.Vehicle.aircraftID} at time {self.time[-1]}:\n > Groundspeed: {groundspeed} fps\n > Altitude: {altitude} ft MSL\n > Waypoint: {waypoint} {self.angles}')
 
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
@@ -196,9 +280,14 @@ class GuidanceSystem:
         if dt is None:
             dt = self.dt
 
+        if self.command._command_type == "flyover":
+            self._setTrajectory()
+
         self._thrustGuidanceSystem(dt)
         self._liftGuidanceSystem(dt)
         self._headingGuidanceSystem(dt)
+
+        self.ii += 1
 
     def updateSystemState(self, mass=None, v_BN_W=None, gamma=None, sigma=None, lat=None, lon=None, h=None, airspeed=None, alpha=None, drag=None, dt=None):
         """ User-supplied state update before asking for next guidance system command.
@@ -251,6 +340,65 @@ class GuidanceSystem:
             self.time.append(self.time[-1] + dt)
             self.command.save_history()
 
+    def _setTrajectory(self):
+        """ A proportional controller to calculate the required trajectory commands to meet the
+            user-designated flyover point (if set).
+        """
+        # Needed are the velocity, flight-path angle, and heading
+        lat_c = self.command.waypoint[0]
+        lon_c = self.command.waypoint[1]
+
+        # flight path angle - Get to the correct altitude before adjusting velocity
+        maximum_commandable_glideslope = 15 * utils.d2r  # radians
+        gamma = np.arctan2(self.command.altitude - self.h[-1], 5280)  # glideslope (AKA flight path angle)
+        # saturate at maximum glideslope
+        if abs(gamma) > maximum_commandable_glideslope:
+            gamma_c = np.sign(gamma) * maximum_commandable_glideslope
+        # command a level-out when within tolerance
+        elif abs(gamma) < 3 * utils.d2r:
+            gamma_c = 0
+        # proportional control on glideslope using K_alpha
+        else:
+            gamma_c = gamma + np.sign(gamma) * self.K_alpha * gamma
+
+        # velocity - Fly as fast as possible until within 1 mile
+        dist_from_target = utils.get_distance(self.lat[-1], self.lon[-1], lat_c, lon_c, units=self.angles)
+        slowdown_radius = 2*5280  # 2 mile
+        if gamma_c == 0:
+            # Once altitude is stabilized, set the required groundspeed
+            if dist_from_target > slowdown_radius:
+                velocity = self.Vehicle.speed_max - 15
+            else:
+                if abs(self.airspeed[-1] - self.command.groundspeed) < 5:
+                    velocity = self.command.groundspeed
+                else:
+                    velocity = self.K_velocity * (self.command.groundspeed - self.airspeed[-1]) + self.airspeed[-1]
+        else:
+            # Whenever altitude is being stabilized, just maintain velocity
+            velocity = self.airspeed[-1]
+
+        # heading - Adjust heading while working on velocity and flight path
+        heading = utils.get_bearing(self.lat[-1], self.lon[-1], lat_c, lon_c, units=self.angles)
+
+        if abs(dist_from_target) < 300:
+            # Let go of user command
+            self.setCommandTrajectory(velocity, gamma_c, heading)
+        else:
+            self.command._change_type = False  # Don't change to a trajectory controller
+            self.setCommandTrajectory(velocity, gamma_c, heading)
+            self.command._change_type = True  # Do no harm
+
+        if self.verbose and self.ii % 5000 == 0:
+            print(f'({self.ii, self.time[-1]}) Aircraft ID {self.Vehicle.aircraftID}:\n > currently located at [{self.lat[-1]}, {self.lon[-1]}] {self.angles}\n > commanded to [{lat_c}, {lon_c}] {self.angles}')
+            print(f' > currently {dist_from_target} feet from the target')
+            print(f' > current velocity is {self.v_BN_W[-1]} fps\n > commanded to {velocity} fps')
+            print(f' > current altitude {self.h[-1]} ft\n > commanded altitude to {self.command.altitude} ft')
+            print(f' > tangent angle to desired altitude is {gamma} {self.angles}')
+            print(f' > setting alpha (glideslope) to {gamma_c} {self.angles}')
+            print(f' > current heading is {self.sigma[-1]} {self.angles}\n > commanded heading to {heading} {self.angles}')
+
+        return
+
     def _getEquationsOfMotion_Ideal(self, dt=None):
         """ An ideal equations of motion solver for a rigid body fixed-wing aircraft.
         This will be the default state solver for any updated system states the user does not supply at any time step.
@@ -292,6 +440,7 @@ class GuidanceSystem:
     def _thrustGuidanceSystem(self, dt):
         xT_old = self.xT
         self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
+        # print((xT_old, self.V_err))
 
         # Evaluate ODE x_T_dot = m*V_err via RK45 to receive x_T for new velocity error
         sol = solve_ivp(self.__xT_dot_ode, [self.time[-1], self.time[-1] + dt], [xT_old], method='RK45')
@@ -305,6 +454,7 @@ class GuidanceSystem:
             # print(f'({self.Vehicle.aircraftID}) Commanded thrust {self.Tc} exceeds max thrust {self.Vehicle.T_max}')
             self.Tc[-1] = self.Vehicle.T_max
         elif self.Tc[-1] < 0:
+            # print(self.Tc[-1])
             self.Tc[-1] = 0
 
         sol = solve_ivp(self.__T_dot_ode, [self.time[-1], self.time[-1] + dt], [self.Thrust[-1]], method='RK45')
