@@ -13,7 +13,7 @@
         b. Import state data from a state estimator
 
     Version notes: v2.0.0
-        This version will add changes to the API to allow the user to input an "absolute" command:
+        This version added changes to the API to allow the user to input an "absolute" command:
             - Flyover waypoint
             - Groundspeed
             - Altitude
