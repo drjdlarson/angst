@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+    <Document id="1">
+        <Placemark id="3">
+            <name>agent_1001</name>
+            <description>Aerial agent track</description>
+            <LineString id="2">
+                <coordinates>36.24545584912534,-112.2822,0.0 36.2700304603568,-112.30236322830645,0.0</coordinates>
+            </LineString>
+        </Placemark>
+    </Document>
+</kml>
