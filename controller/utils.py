@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Utility functions for FANGS.py script
 
-    v1.3.0 Notes:
+    v1.4.0 Notes:
         1. Updated how plots are made. Added the following commands:
             plotGroundspeed()
             plotAirspeed()
@@ -13,9 +13,11 @@
             plotThrustDrag()
             plotLift()
             plotBankAngle()
+        2. Added KML writer tool:
+            writeKMLfromObj()
 """
 __author__ = "Alex Springer"
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Production"
 
@@ -23,6 +25,7 @@ import numpy as np
 import time
 import math
 import pickle
+import simplekml
 import scipy.linalg as la
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -364,21 +367,30 @@ def read_kml_coordinates(filepath):
     return {'lat':lat, 'lon':lon, 'alt':alt}
 
 
-def write_kml_coordinates(original_filepath, new_filepath, new_coordinates):
-    # Format the coordinates how the kml wants them
-    # TODO - make this more user-friendly
-    outstring = '\n\t\t\t\t'
-    for lat, lon, alt in zip(new_coordinates.get('lat'), new_coordinates.get('lon'), new_coordinates.get('alt')):
-        outstring = f'{outstring} {lon},{lat},{alt}'
-    outstring = f'{outstring}  \n\t\t\t'
+def writeKMLfromObj(GuidanceSystemObject, saveFolder=None, noise=False, downsample=50):
+    if saveFolder is None:
+        saveFolder = '.'
+    lat = [l * r2d for l in GuidanceSystemObject.lat[::downsample]]
+    lon = [l * r2d for l in GuidanceSystemObject.lon[::downsample]]
+    alt = GuidanceSystemObject.h[::downsample]
+    target_coords = [(x*r2d, y*r2d) for (x,y) in GuidanceSystemObject.command.waypoint_history]
 
-    tree = et.parse(original_filepath)
-    root = tree.getroot()
-    coordinates_path = [elem.tag for elem in tree.iter() if 'coordinates' in elem.tag]
-    for coordinates in root.findall('.//'+coordinates_path[0]):
-        coordinates.text = outstring
-    
-    tree.write(new_filepath)
+    kml = simplekml.Kml()
+    lin = kml.newlinestring(name=f'agent_{GuidanceSystemObject.Vehicle.aircraftID}',
+                            description='The ground track of an aerial agent using FANGS',
+                            coords=zip(lon, lat, alt))
+    kml.save(f'{saveFolder}\\agent_{GuidanceSystemObject.Vehicle.aircraftID}.kml')
+
+    ii = 1
+    print(target_coords)
+    if len(target_coords) > 0:
+        for tgt in target_coords:
+            print(tgt[::-1])
+            # kml = simplekml.Kml()
+            pt = kml.newpoint(name=f'agent_{GuidanceSystemObject.Vehicle.aircraftID}_target_{ii}',
+                            description='A waypoint defined by the FANGS user for drone fly-over',
+                            coords = [tgt[::-1]])
+            kml.save(f'{saveFolder}\\agent_{GuidanceSystemObject.Vehicle.aircraftID}_target_{ii}.kml')
     
 
 @contextmanager
