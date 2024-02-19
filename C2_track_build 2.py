@@ -16,18 +16,16 @@ import controller.utils as utils
 from controller.FANGS import GuidanceSystem
 import matplotlib.pyplot as plt
 import tracking.track_generator as track
-
-import sys
 import numpy as np
-import numpy.random as rnd
-from copy import deepcopy
 
-import scipy.stats as stats
-import random
 
 rng_seed = 7
 
 def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
+    if saveSimulationFilePath is None:
+        saveSimulationFilePath = '.'
+    if saveFiguresFolderPath is None:
+        saveFiguresFolderPath = '.'
     verbose = False
 
     # Define the aircraft (C2) -- Assume it's in a perfect hover for now
@@ -232,7 +230,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
             drones = {}  # Reset drones
             drones_to_load = [1, 2, 3, 4, 5, 6, 7, 8]
             for drone in drones_to_load:
-                drones[f'drone{drone}'] = utils.load_obj(f'drone{drone}.pkl')
+                drones[f'drone{drone}'] = utils.load_obj(f'{saveSimulationFilePath}\\drone{drone}.pkl')
 
     with utils.Timer(f"track_drone_targets"):
         track_builders = {}
@@ -251,10 +249,10 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
             print(f'{drone_name} tracked from {track_builders[drone_name].time[0]} seconds to {track_builders[drone_name].time[-1]} seconds')
 
-            # track_builders[drone_name].to_csv(f'{drone_name}_ideal_track.csv', downsample=10)
-            # utils.gnc_to_csv(drone_gnc, f'{drone_name}_ideal_lla.csv')
-            track_builders[drone_name].to_csv(f'{drone_name}_noisy_track_2.csv', downsample=10)
-            utils.gnc_to_csv(drone_gnc, f'{drone_name}_noisy_dronedata_2.csv')
+            # track_builders[drone_name].to_csv(f'{saveSimulationFilePath}\\{drone_name}_ideal_track.csv', downsample=10)
+            # utils.gnc_to_csv(drone_gnc, f'{saveSimulationFilePath}\\{drone_name}_ideal_lla.csv')
+            track_builders[drone_name].to_csv(f'{saveSimulationFilePath}\\{drone_name}_noisy_track_2.csv', downsample=10)
+            utils.gnc_to_csv(drone_gnc, f'{saveSimulationFilePath}\\{drone_name}_noisy_dronedata_2.csv')
 
     with utils.Timer(f'saving_{len(track_builders.keys())}_track_plot'):
         fig, (ax_brg, ax_elv, ax_rng) = plt.subplots(3)
@@ -273,16 +271,17 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         ax_elv.axes.get_xaxis().set_visible(False)
         ax_elv.grid(visible='True')
         ax_rng.grid(visible='True')
-        fig.savefig(f'noisy_{len(track_builders.keys())}_tracks_2.png')
+        fig.savefig(f'{saveFiguresFolderPath}\\noisy_{len(track_builders.keys())}_tracks_2.png')
 
     if runSim:
         with utils.Timer('saving_drone_flight_objs'):
             for drone_name, drone_gnc in drones.items():
-                utils.save_obj(drone_gnc, f'abs_command_{drone_name}.pkl')
+                utils.save_obj(drone_gnc, f'{saveSimulationFilePath}\\abs_command_{drone_name}.pkl')
 
     return
 
 
 if __name__ == "__main__":
     with utils.Timer('OVERALL SIMULATION'):
-        run_C2(stopTime=30*60)
+        run_C2(stopTime=30*60,
+               saveSimulationFilePath=r'C:\Users\Alex\Dropbox\UA-MME\2023\Fall\ME-594\Project\fangs\saved_simulations\Grand_Canyon_Search_and_Rescue')
