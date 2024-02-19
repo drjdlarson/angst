@@ -181,9 +181,21 @@ class GuidanceSystem:
             self.gamma_history.append(self.gamma)
             self.sigma_history.append(self.sigma)
             self.airspeed_history.append(self.airspeed)
-            self.groundspeed_history.append(self.groundspeed)
-            self.altitude_history.append(self.altitude)
-            self.waypoint_history.append(self.waypoint)
+            if self.groundspeed != self.groundspeed_history[-1]:
+                if self.groundspeed_history[-1] == np.nan:
+                    self.groundspeed_history[-1] = self.groundspeed
+                else:
+                    self.groundspeed_history.append(self.groundspeed)
+            if self.altitude != self.altitude_history[-1]:
+                if self.altitude_history[-1] == np.nan:
+                    self.altitude_history[-1] = self.altitude
+                else:
+                    self.altitude_history.append(self.altitude)
+            if self.waypoint != self.waypoint_history[-1]:
+                if self.waypoint_history[-1] == (np.nan, np.nan):
+                    self.waypoint_history[-1] = self.waypoint
+                else:
+                    self.waypoint_history.append(self.waypoint)
 
     def setCommandTrajectory(self, velocity, flight_path_angle, heading):
         """ Set a user-defined commanded aircraft trajectory
