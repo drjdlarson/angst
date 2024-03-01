@@ -75,7 +75,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         drone8 = FixedWingVehicle(drone_parameters, aircraftID=1008, dt=C2["dt"])
 
     # Define the drone initial conditions - true for all 8 drones since C2 at hover
-    lat, lon = utils.get_point_at_distance(C2['lat'], C2['lon'], 750, C2['heading'])
+    lat, lon = utils.get_point_at_distance(C2['lat'], C2['lon'], 150, C2['heading'])
     drone_init_conds = {
         "v_BN_W": 50 * utils.knts2fps,  # Stabilizes into flight at 50kts
         "h": C2['alt'],  # Launched from C2 aircraft
