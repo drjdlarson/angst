@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" (A)gent (T)racking and (T)arget (A)ssignment (C)ontrol (S)ystem
+""" (A)gent (T)racking and (A)ssignment (M)anagement (S)ystem
         This system provides tracking of airborne agents (e.g., drone swarms) and target
         assignment algorithms. The tracking functions utilized in this system are nothing
         more than wrappers for the Command & control (C2) of Autonomous Random finite

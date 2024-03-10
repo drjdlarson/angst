@@ -1,7 +1,7 @@
 import controller.utils as utils
 import matplotlib.pyplot as plt
 import numpy as np
-import controller.ATTACS as ATTACS
+import fangs.controller.ATAMS as ATAMS
 
 
 if __name__ == '__main__':
@@ -37,7 +37,7 @@ if __name__ == '__main__':
                               drone_obj.sigma[int(time/drone_obj.dt)],
                               drone_obj.gamma[int(time/drone_obj.dt)]]
     
-    targetAssignment = ATTACS.assignments()
+    targetAssignment = ATAMS.assignments()
     targetAssignment.weights.distance = 10
     targetAssignment.weights.altitude = 1
     targetAssignment.weights.groundspeed = 0.1
