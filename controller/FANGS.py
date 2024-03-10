@@ -69,7 +69,7 @@ class GuidanceSystem:
 
         Note: The aircraft will initialize with a set of steady-state commands designed to
               keep the aircraft flying at the initialized state. If you need to update the aircraft
-              commands, use either setCommandTrajectory() or setFlyoverCommand()
+              commands, use either setCommandTrajectory() or setCommandFlyover()
         
         Parameters
         ----------
@@ -235,7 +235,7 @@ class GuidanceSystem:
             self.command._command_type = "trajectory"
 
 
-    def setFlyoverCommand(self, groundspeed, altitude, waypoint):
+    def setCommandFlyover(self, groundspeed, altitude, waypoint):
         """ Set a user-defined commanded fly-over point
         
         Note: This command will come into effect on the next iteration of the guidance system.

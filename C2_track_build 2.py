@@ -169,7 +169,7 @@ def run_C2(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                                                ((36.449291)*utils.d2r, (-112.399009)*utils.d2r),
                                                ((36.580698)*utils.d2r, (-111.866192)*utils.d2r),
                                                ]
-                            drone_gnc.setFlyoverCommand(vel, alt, target_flyovers[target_iter])
+                            drone_gnc.setCommandFlyover(vel, alt, target_flyovers[target_iter])
                             target_iter+=1
 
                         # Attempt to rescue the drone if it is flying too high or too low
