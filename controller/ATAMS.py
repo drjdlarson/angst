@@ -11,9 +11,11 @@
 
     Version notes: v0.0.1
         Initial development
+    Version notes: v0.0.2
+        Loose integration with FANGS
 """
 __author__ = "Alex Springer"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Development"
 
@@ -29,10 +31,11 @@ class assignments:
     a set of agents, a set of targets, and a cost for each assignment."""
 
     def __init__(self):
-        print('Hello world')
         self.n = 1
         self.costMatrix = [[]]*self.n
         self.weights = self.weightingValues()
+        self.saveCSV = False
+        self.savepath = r''
 
 
     class weightingValues:
@@ -87,8 +90,9 @@ class assignments:
                 if headingChange > np.pi:
                     headingChange = 2*np.pi - headingChange
 
-                altitudeChange = abs(targets[target][2] - agentStates[agent][2])
-                if np.sign(altitudeChange) == np.sign(agentStates[agent][-1]):
+                altitudeChange = targets[target][2] - agentStates[agent][2]
+                if altitudeChange < 0:
+                    # It's cheaper to lower altitude than it is to raise altitude
                     flightPathWeight = 0.75
                 else:
                     flightPathWeight = 1
@@ -97,11 +101,14 @@ class assignments:
 
                 distanceCost = self.weights.distance * distanceToTarget
                 headingCost = self.weights.heading * headingChange
-                altitudeCost = self.weights.altitude * altitudeChange * flightPathWeight
+                altitudeCost = self.weights.altitude * abs(altitudeChange) * flightPathWeight
                 velocityCost = self.weights.groundspeed * groundspeedChange
                 totalAssignmentCost = distanceCost + headingCost + altitudeCost + velocityCost
 
                 self.costMatrix[agent][target] = totalAssignmentCost
+
+                if self.saveCSV:
+                    np.savetxt(f'{self.savepath}\\costmatrix.csv', self.costMatrix, delimiter=',')
 
 
     def assignAgentsToTargets(self, agents, targets, setControl=True):
@@ -135,9 +142,15 @@ class assignments:
         ii = 0
         for agentID, agent in agents.items():
             if ii in row_ind:
-                assigned[agentID] = [(targets[col_ind[ii]][0], targets[col_ind[ii]][1])]
-                print(f'Assigning {agent.Vehicle.aircraftID} to {assigned[agent.Vehicle.aircraftID]}')
+                assigned[agentID] = targets[col_ind[ii]][:]
+                print(f'Assigning {agentID} to target {col_ind[ii]+1}')
+                agent.setCommandFlyover(assigned[agentID][3],
+                                        assigned[agentID][2],
+                                        (assigned[agentID][0], assigned[agentID][1]))
             ii += 1
+        
+        if self.saveCSV:
+            np.savetxt(f'{self.savepath}\\assignments.csv', [row_ind, col_ind], delimiter=',')
 
 
 class tracking:

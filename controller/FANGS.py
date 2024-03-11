@@ -227,7 +227,7 @@ class GuidanceSystem:
         # Update time since last command
         self.command.time = self.time[-1]
 
-        # Update the command reference heigh
+        # Update the command reference height
         self.command.h_ref = self.h[-1]
 
         # Update the system operating command type
@@ -268,8 +268,7 @@ class GuidanceSystem:
         if self.command._change_type:
             self.command._command_type = "flyover"
 
-        if self.verbose:
-            print(f'Commanding Aircraft {self.Vehicle.aircraftID} at time {self.time[-1]}:\n > Groundspeed: {groundspeed} fps\n > Altitude: {altitude} ft MSL\n > Waypoint: {waypoint} {self.angles}')
+        print(f'Commanding Flyover for Aircraft {self.Vehicle.aircraftID} at agent time {self.time[-1]}:\n > Groundspeed: {groundspeed} fps\n > Altitude: {altitude} ft MSL\n > Waypoint: {waypoint} {self.angles}')
 
     def getGuidanceCommands(self, dt=None):
         """ Get the Guidance System outputs based on current state and commanded trajectory.
@@ -394,7 +393,11 @@ class GuidanceSystem:
 
         if abs(dist_from_target) < 300:
             # Let go of user command
+            print('Agent within 300 feet of target, setting trajectory:')
+            print(f'\t>Velocity = {velocity}\n\t>Flight Path = {gamma_c}\n\tHeading = {heading}')
+            self.command._change_type = True
             self.setCommandTrajectory(velocity, gamma_c, heading)
+            print(f'self.command._command_type={self.command._command_type}')
         else:
             self.command._change_type = False  # Don't change to a trajectory controller
             self.setCommandTrajectory(velocity, gamma_c, heading)
@@ -508,6 +511,7 @@ class GuidanceSystem:
 
         # Calculate commanded angle of attack (alpha_c)
         alpha_c = 2 * self.Lc[-1] / (utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2) + self.Vehicle.alpha_o
+        # TODO: SATURATE ALPHA
         self.alpha_c.append(alpha_c)
 
         # Calculate altitude command (h_c)

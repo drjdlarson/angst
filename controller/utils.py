@@ -197,6 +197,7 @@ def plotSim(simulation_guidance_object, saveFolder=None, filePrefix=None, showPl
 
     # Show plots
     if showPlots: plt.show()
+    plt.close()
 
 
 def plotGroundspeed(acft_Guidance):
@@ -370,6 +371,9 @@ def read_kml_coordinates(filepath):
 
 
 def writeKMLfromObj(GuidanceSystemObject, saveFolder=None, noise=False, downsample=50):
+    if noise is not False:
+        print('Noise not currently implemented in this build.')
+    
     if saveFolder is None:
         saveFolder = '.'
     lat = [l * r2d for l in GuidanceSystemObject.lat[::downsample]]
@@ -398,10 +402,15 @@ def writeKMLfromObj(GuidanceSystemObject, saveFolder=None, noise=False, downsamp
 @contextmanager
 def Timer(taskName=None):
     t0 = time.time()
+    timeType = 'seconds'
     try: yield
     finally:
+        timeToRun = time.time() - t0
+        if timeToRun > 60:
+                timeToRun = timeToRun/60
+                timeType = 'minutes'
         if taskName is None:
-            str2print = f'Elapsed time: {time.time() - t0} seconds'
+            str2print = f'Elapsed time: {round(timeToRun, 2)} {timeType}'
         else:
-            str2print = f'[{taskName}] Elapsed time: {time.time() - t0} seconds'
+            str2print = f'[{taskName}] Elapsed time: {round(timeToRun, 2)} {timeType}'
         print(str2print)
