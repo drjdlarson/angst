@@ -18,6 +18,8 @@
             - Groundspeed
             - Altitude
         This adds the capability for the user to designate mission-related commands.
+    Version notes: v2.0.1
+        Bug hunting
 """
 __author__ = "Alex Springer"
 __version__ = "2.0.0"
