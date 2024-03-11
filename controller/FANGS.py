@@ -502,7 +502,7 @@ class GuidanceSystem:
             # print(f'({self.Vehicle.aircraftID}) Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
             self.Lc[-1] = L_max
 
-        # Calculate lift
+        # Calculate lift response
         sol = solve_ivp(self.__L_dot_ode, [self.time[-1], self.time[-1] + dt], [self.Lift[-1]], method='RK45')
         self.Lift.append(sol.y[-1][-1])
 
@@ -511,7 +511,7 @@ class GuidanceSystem:
 
         # Calculate commanded angle of attack (alpha_c)
         alpha_c = 2 * self.Lc[-1] / (utils.const_density * self.Vehicle.wing_area * self.Vehicle.C_Lalpha * self.airspeed[-1]**2) + self.Vehicle.alpha_o
-        # TODO: SATURATE ALPHA
+        # TODO: SATURATE ALPHA at 12deg?
         self.alpha_c.append(alpha_c)
 
         # Calculate altitude command (h_c)
