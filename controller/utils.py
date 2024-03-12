@@ -75,9 +75,9 @@ def get_bearing(lat1, long1, lat2, long2, units="Radians"):
     dLon = (long2 - long1)
     x = math.cos(lat2) * math.sin(dLon)
     y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dLon)
-    brng = np.arctan2(x,y)
+    brng = np.arctan2(x,y) % (2*np.pi)
     if units == "Degrees":
-        brng = np.degrees(brng)
+        brng = np.degrees(brng) % 360
     return brng
 
 

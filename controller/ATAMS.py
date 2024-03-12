@@ -13,13 +13,16 @@
         Initial development
     Version notes: v0.0.2
         Loose integration with FANGS
+    Version notes: v0.0.3
+        Create debug option
 """
 __author__ = "Alex Springer"
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Development"
 
 import numpy as np
+import pandas as pd
 import controller.utils as utils
 from scipy.optimize import linear_sum_assignment
 
@@ -36,6 +39,9 @@ class assignments:
         self.weights = self.weightingValues()
         self.saveCSV = False
         self.savepath = r''
+        self.debug = False
+        self.CostMatrixCalcCount = 0
+        self.AssignmentCount = 0
 
 
     class weightingValues:
@@ -107,8 +113,10 @@ class assignments:
 
                 self.costMatrix[agent][target] = totalAssignmentCost
 
-                if self.saveCSV:
-                    np.savetxt(f'{self.savepath}\\costmatrix.csv', self.costMatrix, delimiter=',')
+        self.CostMatrixCalcCount += 1
+
+        if self.debug:
+            np.savetxt(f'{self.savepath}\\costmatrix{self.CostMatrixCalcCount}.csv', self.costMatrix, delimiter=',')
 
 
     def assignAgentsToTargets(self, agents, targets, setControl=True):
@@ -148,9 +156,13 @@ class assignments:
                                         assigned[agentID][2],
                                         (assigned[agentID][0], assigned[agentID][1]))
             ii += 1
-        
-        if self.saveCSV:
-            np.savetxt(f'{self.savepath}\\assignments.csv', [row_ind, col_ind], delimiter=',')
+        self.AssignmentCount += 1
+
+        if self.debug:
+            np.savetxt(f'{self.savepath}\\assignments{self.AssignmentCount}.csv', [row_ind, col_ind], delimiter=',')
+            agentStatesDict = {str(drone): [drone_obj.lat[-1],drone_obj.lon[-1],drone_obj.h[-1],drone_obj.v_BN_W[-1],drone_obj.sigma[-1],drone_obj.gamma[-1]] for drone, drone_obj in agents.items()}
+            tt = [[drone_obj.time[-1]] for _, drone_obj in agents.items()]
+            pd.DataFrame.from_dict(data=agentStatesDict, orient='columns').to_csv(f'{self.savepath}\\agent_states_{tt[0]}.csv', header=False)
 
 
 class tracking:

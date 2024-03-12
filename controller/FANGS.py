@@ -22,7 +22,7 @@
         Bug hunting
 """
 __author__ = "Alex Springer"
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Development"
 
@@ -221,6 +221,9 @@ class GuidanceSystem:
         self.command.sigma = heading  # Commanded heading
         self.command.airspeed = utils.wind_vector(self.command.v_BN_W, self.command.gamma, self.command.sigma)
 
+        if self.command.gamma == -10:
+            print(f'{self.Vehicle.aircraftID}: !!! {self.time[-1]} !!!')
+
         # Update errors
         self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
         self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
@@ -395,7 +398,7 @@ class GuidanceSystem:
 
         if abs(dist_from_target) < 300:
             # Let go of user command
-            print('Agent within 300 feet of target, setting trajectory:')
+            print(f'Agent {self.Vehicle.aircraftID} within 300 feet of target, setting trajectory:')
             print(f'\t>Velocity = {velocity}\n\t>Flight Path = {gamma_c}\n\tHeading = {heading}')
             self.command._change_type = True
             self.setCommandTrajectory(velocity, gamma_c, heading)
@@ -501,7 +504,7 @@ class GuidanceSystem:
 
         # Saturation (upper/lower limits on commanded lift)
         if self.Lc[-1] > L_max:
-            # print(f'({self.Vehicle.aircraftID}) Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
+            # print(f'({self.Vehicle.aircraftID}, {self.time[-1]}) Command lift {self.Lc} is greater than max lift {L_max}, setting to {L_max}')
             self.Lc[-1] = L_max
 
         # Calculate lift response
