@@ -10,18 +10,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-DEBUG = True
+FOR_RECORD = True
 rng_seed = 7
 
 def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
-    if DEBUG:
-        sys.stdout = open(f'{saveSimulationFilePath}\\logfile', 'w')
+    if FOR_RECORD:
+        sys.stdout = open(f'{saveSimulationFilePath}\\logfile.txt', 'w')
+        with open(f'{saveSimulationFilePath}\\Progress\\begin.txt', 'w') as fp:
+            pass
 
     if saveSimulationFilePath is None:
         saveSimulationFilePath = '.'
     if saveFiguresFolderPath is None:
         saveFiguresFolderPath = '.'
     verbose = False
+
+    if FOR_RECORD:
+        print(f'Saving simulation to {saveSimulationFilePath}')
+        print(f'Saving graphs to {saveFiguresFolderPath}')
 
     # Define the aircraft (C2) -- Assume it's in a perfect hover for now
     C2 = {
@@ -43,13 +49,13 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         "speed_min": 25 * utils.knts2fps,
         "Kf": 0,
         "omega_T": 2.0,
-        "omega_L": 0.5,
+        "omega_L": 0.9,
         "omega_mu": 1.0,
         "T_max": 45,
-        "K_Lmax": 0.26,
+        "K_Lmax": 0.3,
         "mu_max": 45 * utils.d2r,
         "C_Do": 0.05,
-        "C_Lalpha": 0.5 / utils.d2r,
+        "C_Lalpha": 0.6 / utils.d2r,
         "alpha_o": -0.1 * utils.d2r,
         "wing_area": 8,
         "aspect_ratio": 12,
@@ -128,7 +134,7 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 elif C2["time"][-1] >= launch_delay*2 and "drone3" not in drones.keys():
                     drone3_gnc = GuidanceSystem(drone3, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
                     drones["drone3"] = drone3_gnc
-                elif C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
+                if C2["time"][-1] >= launch_delay*3 and "drone4" not in drones.keys():
                     drone4_gnc = GuidanceSystem(drone4, TF_constants, drone_init_conds, time=C2["time"][-1], dt=C2["dt"], verbose=verbose)
                     drones["drone4"] = drone4_gnc
                 elif C2["time"][-1] >= launch_delay*4 and "drone5" not in drones.keys():
@@ -201,9 +207,11 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                         # Command the drone if it is time to do so
                         if drone_gnc.time[-1] >= 30*cmdtime+drone_gnc.time[0] and drone_gnc.command.time == 0:
                             np.random.seed(drone_gnc.Vehicle.aircraftID)
-                            vel = np.random.randint(drone_gnc.Vehicle.speed_min+10, drone_gnc.Vehicle.speed_max-15) * utils.knts2fps
+                            vel = np.random.randint(drone_gnc.Vehicle.speed_min+25, drone_gnc.Vehicle.speed_max-15)
+                            min_velocity_with_10_deg_roc = 80  # fps
+                            if vel < min_velocity_with_10_deg_roc:
+                                vel = min_velocity_with_10_deg_roc
                             np.random.seed(drone_gnc.Vehicle.aircraftID)
-                            # roc = np.random.randint(-5, 5) * utils.d2r
                             roc = 10 * utils.d2r
                             np.random.seed(drone_gnc.Vehicle.aircraftID)
                             hdg = np.random.randint(0, 359) * utils.d2r
@@ -267,6 +275,8 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 if len(C2["time"])%(stopTime/drone1_gnc.dt/20) == 0:
                     perc = round(C2["time"][-1]/stopTime*100)
                     print(f'{perc}% complete...')
+                    with open(f'{saveSimulationFilePath}\\Progress\\{perc}_percent.txt', 'w') as fp:
+                        pass
 
     else:
         with utils.Timer(f"load_drone_objects"):
@@ -330,6 +340,10 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
     with utils.Timer(f'saving_KML_files'):
         for drone_name, drone_gnc in drones.items():
             utils.writeKMLfromObj(drone_gnc, saveFolder=saveSimulationFilePath, )
+
+    if FOR_RECORD:
+        with open(f'{saveSimulationFilePath}\\Progress\\complete.txt', 'w') as fp:
+            pass
 
     return
 

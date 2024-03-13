@@ -221,9 +221,6 @@ class GuidanceSystem:
         self.command.sigma = heading  # Commanded heading
         self.command.airspeed = utils.wind_vector(self.command.v_BN_W, self.command.gamma, self.command.sigma)
 
-        if self.command.gamma == -10:
-            print(f'{self.Vehicle.aircraftID}: !!! {self.time[-1]} !!!')
-
         # Update errors
         self.V_err = self.command.v_BN_W - self.v_BN_W[-1]  # Calculate inertial velocity error
         self.hdot_err = self.command.v_BN_W*(np.sin(self.command.gamma) - np.sin(self.gamma[-1]))
@@ -364,7 +361,8 @@ class GuidanceSystem:
         lat_c = self.command.waypoint[0]
         lon_c = self.command.waypoint[1]
 
-        # flight path angle - Get to the correct altitude before adjusting velocity
+        # flight path angle - Get to the correct altitude
+        gamma_c = 0
         maximum_commandable_glideslope = 15 * utils.d2r  # radians
         gamma = np.arctan2(self.command.altitude - self.h[-1], 5280)  # glideslope (AKA flight path angle)
         # saturate at maximum glideslope
@@ -380,18 +378,13 @@ class GuidanceSystem:
         # velocity - Fly as fast as possible until within 1 mile
         dist_from_target = utils.get_distance(self.lat[-1], self.lon[-1], lat_c, lon_c, units=self.angles)
         slowdown_radius = 2*5280  # 2 mile
-        if gamma_c == 0:
-            # Once altitude is stabilized, set the required groundspeed
-            if dist_from_target > slowdown_radius:
-                velocity = self.Vehicle.speed_max - 15
-            else:
-                if abs(self.airspeed[-1] - self.command.groundspeed) < 5:
-                    velocity = self.command.groundspeed
-                else:
-                    velocity = self.K_velocity * (self.command.groundspeed - self.airspeed[-1]) + self.airspeed[-1]
+        if dist_from_target > slowdown_radius:
+            velocity = self.Vehicle.speed_max - 10
         else:
-            # Whenever altitude is being stabilized, just maintain velocity
-            velocity = self.airspeed[-1]
+            if abs(self.airspeed[-1] - self.command.groundspeed) < 5:
+                velocity = self.command.groundspeed
+            else:
+                velocity = self.K_velocity * (self.command.groundspeed - self.airspeed[-1]) + self.airspeed[-1]
 
         # heading - Adjust heading while working on velocity and flight path
         heading = utils.get_bearing(self.lat[-1], self.lon[-1], lat_c, lon_c, units=self.angles)

@@ -1,0 +1,241 @@
+Saving simulation to C:\Users\Alex\Documents\MAE 594 project\fangs\saved_simulations\Grand_Canyon_SnR_ATAMS
+Saving graphs to C:\Users\Alex\Documents\MAE 594 project\fangs\saved_simulations\Grand_Canyon_SnR_ATAMS
+[build_drone_obj(s)] Elapsed time: 0.0 seconds
+[build_initial_drone_GuidanceSystem_obj(s)] Elapsed time: 0.0 seconds
+---
+Commanding drone2:
+ > Velocity: 62.80327762011127 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 103.0 deg
+ > Drone Time: 8.949999999999992
+---
+Commanding drone1:
+ > Velocity: 47.39870009065001 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 189.0 deg
+ > Drone Time: 9.199999999999996
+---
+Commanding drone4:
+ > Velocity: 47.39870009065001 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 2.0 deg
+ > Drone Time: 16.200000000000095
+---
+Commanding drone3:
+ > Velocity: 56.87844010878002 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 285.0 deg
+ > Drone Time: 27.950000000000262
+---
+Commanding drone5:
+ > Velocity: 60.433342615578766 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 227.0 deg
+ > Drone Time: 39.799999999999876
+---
+Commanding drone7:
+ > Velocity: 50.36111884631564 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 250.00000000000003 deg
+ > Drone Time: 46.4499999999995
+---
+Commanding drone6:
+ > Velocity: 56.28595635764689 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 92.0 deg
+ > Drone Time: 47.29999999999945
+---
+Commanding drone8:
+ > Velocity: 53.91602135311439 knt
+ > Flight Path Angle: 10.0 deg
+ > Heading: 280.0 deg
+ > Drone Time: 53.4499999999991
+5% complete...
+Agent States at time 120.04999999999532:
+drone1: [  36.23110957 -112.27017248 8525.75099826   47.43302643  182.8876119
+   10.00211805]
+drone2: [  36.25135013 -112.24749793 9046.8873849    62.80723764   99.56550302
+   10.0009329 ]
+drone3: [  36.23796528 -112.29224894 8535.04027233   56.90798315  268.64920523
+   10.01889471]
+drone4: [ 3.62661870e+01 -1.12281506e+02  8.42568850e+03  4.74125479e+01
+  1.91972611e+00  9.99999471e+00]
+drone5: [  36.23513677 -112.27546317 8424.26870066   60.45503628  208.19773549
+   10.02663544]
+drone6: [  36.257999   -112.26417358 8195.51458029   56.20680051   82.31621553
+   10.00612088]
+drone7: [  36.23766705 -112.28039441 8077.03654485   50.17673688  225.04822214
+   10.03656433]
+drone8: [  36.23940207 -112.28348699 8047.31975154   53.88139504  245.43232689
+   10.07828466]
+Cost Matrix:
+[[2980.23293102 3798.30731794 1475.20917299 3988.04408304 1661.89610671
+  4399.78379045 1051.46747966 1049.03464291]
+ [2298.8453125  3139.92411014 1106.01052429 3309.00573092 1307.57336568
+  3714.36431435 1401.93347858  447.31005551]
+ [2923.32500057 3951.30381597 1302.77542075 3897.66083877 1685.80338112
+  4551.22483038  905.93046893 1038.87439164]
+ [2852.11019543 3953.19782714 1558.16620767 3824.42000797 1980.81396404
+  4524.14770587  738.10172958  969.82733588]
+ [3124.64259763 3947.58214087 1529.53727581 4108.65736603 1717.71736223
+  4548.34412074  929.63632975 1194.78611415]
+ [3114.98464087 4031.44988543 1936.90468722 4123.206943   2178.8799382
+  4601.87277763  719.89616929 1185.37305765]
+ [3450.57668536 4324.93885903 1842.07027877 4425.5483527  2065.53613383
+  4925.22046105  636.42516549 1565.91086494]
+ [3446.10773521 4392.37699418 1834.54571907 4420.76682314 2133.13938358
+  4992.34652682  578.06516874 1561.64249665]]
+Assigning drone1 to target 2
+Commanding Flyover for Aircraft 1001 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 12000 ft MSL
+ > Waypoint: (0.6314512396456557, -1.9539239356092213) Radians
+Assigning drone2 to target 6
+Commanding Flyover for Aircraft 1002 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 12600 ft MSL
+ > Waypoint: (0.632132773265267, -1.9542306248653816) Radians
+Assigning drone3 to target 3
+Commanding Flyover for Aircraft 1003 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 9600 ft MSL
+ > Waypoint: (0.633148834142608, -1.9667725434169203) Radians
+Assigning drone4 to target 4
+Commanding Flyover for Aircraft 1004 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 12000 ft MSL
+ > Waypoint: (0.6377918637385186, -1.956936496071211) Radians
+Assigning drone5 to target 5
+Commanding Flyover for Aircraft 1005 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 10000 ft MSL
+ > Waypoint: (0.6298780696710782, -1.961917595943233) Radians
+Assigning drone6 to target 8
+Commanding Flyover for Aircraft 1006 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 9000 ft MSL
+ > Waypoint: (0.6384536227777047, -1.9524333720681404) Radians
+Assigning drone7 to target 1
+Commanding Flyover for Aircraft 1007 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 11000 ft MSL
+ > Waypoint: (0.6375751811118834, -1.9557740718827976) Radians
+Assigning drone8 to target 7
+Commanding Flyover for Aircraft 1008 at agent time 120.04999999999532:
+ > Groundspeed: 84.3905 fps
+ > Altitude: 7700 ft MSL
+ > Waypoint: (0.6361601379675366, -1.9617327830287392) Radians
+10% complete...
+15% complete...
+20% complete...
+25% complete...
+30% complete...
+35% complete...
+Agent 1005 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 3.788428515473105
+self.command._command_type=trajectory
+40% complete...
+45% complete...
+Agent 1002 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 1.717945685208343
+self.command._command_type=trajectory
+Agent 1008 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 5.936700180199481
+self.command._command_type=trajectory
+50% complete...
+Agent 1001 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 1.7207847137553136
+self.command._command_type=trajectory
+55% complete...
+60% complete...
+Agent 1004 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 0.44431365205756473
+self.command._command_type=trajectory
+Agent 1003 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 4.834827081438949
+self.command._command_type=trajectory
+65% complete...
+70% complete...
+Agent 1007 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 0.4934746696346844
+self.command._command_type=trajectory
+75% complete...
+80% complete...
+85% complete...
+Agent 1006 within 300 feet of target, setting trajectory:
+	>Velocity = 84.3905
+	>Flight Path = 0
+	Heading = 0.768914351610447
+self.command._command_type=trajectory
+90% complete...
+95% complete...
+100% complete...
+[simulate_1800_s_drone_flight] Elapsed time: 41.07 minutes
+[saving_drone_flight_objs] Elapsed time: 46.66 seconds
+Building track data for drone1...
+
+drone1 tracked from 0 seconds to 1800.0499999989106 seconds
+Building track data for drone2...
+
+drone2 tracked from 5.04999999999999 seconds to 1800.0499999989106 seconds
+Building track data for drone3...
+
+drone3 tracked from 10.000000000000007 seconds to 1800.0499999989106 seconds
+Building track data for drone4...
+
+drone4 tracked from 15.000000000000078 seconds to 1800.0499999989106 seconds
+Building track data for drone5...
+
+drone5 tracked from 20.00000000000015 seconds to 1800.0499999989106 seconds
+Building track data for drone6...
+
+drone6 tracked from 25.00000000000022 seconds to 1800.0499999989106 seconds
+Building track data for drone7...
+
+drone7 tracked from 30.00000000000029 seconds to 1800.0499999989106 seconds
+Building track data for drone8...
+
+drone8 tracked from 35.00000000000015 seconds to 1800.0499999989106 seconds
+[track_drone_targets] Elapsed time: 2.93 minutes
+[saving_8_track_plot] Elapsed time: 1.31 seconds
+[save_figures] Elapsed time: 5.31 seconds
+[save_figures] Elapsed time: 5.87 seconds
+[save_figures] Elapsed time: 4.24 seconds
+[save_figures] Elapsed time: 4.53 seconds
+[save_figures] Elapsed time: 4.83 seconds
+[save_figures] Elapsed time: 6.0 seconds
+[save_figures] Elapsed time: 5.13 seconds
+[save_figures] Elapsed time: 5.9 seconds
+[saving_8_track_plot] Elapsed time: 1.49 minutes
+[(36.179491, -111.95159500000001)]
+(-111.95159500000001, 36.179491)
+[(36.21854, -111.969167)]
+(-111.969167, 36.21854)
+[(36.276756, -112.687766)]
+(-112.687766, 36.276756)
+[(36.54278200000001, -112.124202)]
+(-112.124202, 36.54278200000001)
+[(36.089355, -112.409598)]
+(-112.409598, 36.089355)
+[(36.580698, -111.866192)]
+(-111.866192, 36.580698)
+[(36.530367, -112.0576)]
+(-112.0576, 36.530367)
+[(36.449291, -112.399009)]
+(-112.399009, 36.449291)
+[saving_KML_files] Elapsed time: 0.44 seconds
+[OVERALL SIMULATION] Elapsed time: 46.32 minutes
