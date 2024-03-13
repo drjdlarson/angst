@@ -20,9 +20,12 @@
         This adds the capability for the user to designate mission-related commands.
     Version notes: v2.0.1
         Bug hunting
+    Version notes: v2.1.0
+        Re-wrote flyover command language to attempt to prevent stall: the aircraft now speeds up to
+            max speed (minus 10 feet per second for safety margin) while changing flight path angle.
 """
 __author__ = "Alex Springer"
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Development"
 
