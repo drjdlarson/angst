@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-FOR_RECORD = True
+FOR_RECORD = False
 rng_seed = 7
 
 def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
@@ -198,6 +198,8 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 
                     assignmentsCommanded = True
 
+                    return
+
 
                 for drone_name, drone_gnc in drones.items():
                     if not drone_gnc.crashed:
@@ -275,8 +277,9 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
                 if len(C2["time"])%(stopTime/drone1_gnc.dt/20) == 0:
                     perc = round(C2["time"][-1]/stopTime*100)
                     print(f'{perc}% complete...')
-                    with open(f'{saveSimulationFilePath}\\Progress\\{perc}_percent.txt', 'w') as fp:
-                        pass
+                    if FOR_RECORD:
+                        with open(f'{saveSimulationFilePath}\\Progress\\{perc}_percent.txt', 'w') as fp:
+                            pass
 
     else:
         with utils.Timer(f"load_drone_objects"):
@@ -351,5 +354,5 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
 if __name__ == "__main__":
     with utils.Timer('OVERALL SIMULATION'):
         runsim(stopTime=30*60,
-               saveSimulationFilePath=r"C:\Users\Alex\Documents\MAE 594 project\fangs\saved_simulations\Grand_Canyon_SnR_ATAMS",
-               saveFiguresFolderPath=r"C:\Users\Alex\Documents\MAE 594 project\fangs\saved_simulations\Grand_Canyon_SnR_ATAMS")
+               saveSimulationFilePath=r"C:\Users\sprin\OneDrive\Documents\Project\fangs\saved_simulations\Grand_Canyon_SnR_ATAMS\assign",
+               saveFiguresFolderPath=r"C:\Users\sprin\OneDrive\Documents\Project\fangs\saved_simulations\Grand_Canyon_SnR_ATAMS\assign")

@@ -162,7 +162,7 @@ class assignments:
             np.savetxt(f'{self.savepath}\\assignments{self.AssignmentCount}.csv', [row_ind, col_ind], delimiter=',')
             agentStatesDict = {str(drone): [drone_obj.lat[-1],drone_obj.lon[-1],drone_obj.h[-1],drone_obj.v_BN_W[-1],drone_obj.sigma[-1],drone_obj.gamma[-1]] for drone, drone_obj in agents.items()}
             tt = [[drone_obj.time[-1]] for _, drone_obj in agents.items()]
-            pd.DataFrame.from_dict(data=agentStatesDict, orient='columns').to_csv(f'{self.savepath}\\agent_states_{tt[0]}.csv', header=False)
+            pd.DataFrame.from_dict(data=agentStatesDict, orient='index').to_csv(f'{self.savepath}\\agent_states_{tt[0]}.csv', header=False)
 
 
 class tracking:
