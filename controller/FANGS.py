@@ -366,7 +366,7 @@ class GuidanceSystem:
 
         # flight path angle - Get to the correct altitude
         gamma_c = 0
-        maximum_commandable_glideslope = 15 * utils.d2r  # radians
+        maximum_commandable_glideslope = 15 * utils.d2r  # 15 degrees
         gamma = np.arctan2(self.command.altitude - self.h[-1], 5280)  # glideslope (AKA flight path angle)
         # saturate at maximum glideslope
         if abs(gamma) > maximum_commandable_glideslope:
@@ -394,7 +394,7 @@ class GuidanceSystem:
 
         if abs(dist_from_target) < 300:
             # Let go of user command
-            print(f'Agent {self.Vehicle.aircraftID} within 300 feet of target, setting trajectory:')
+            print(f'[{round(self.time[-1], 2)}s] Agent {self.Vehicle.aircraftID} within 300 feet of target, maintaining trajectory:')
             print(f'\t>Velocity = {velocity}\n\t>Flight Path = {gamma_c}\n\tHeading = {heading}')
             self.command._change_type = True
             self.setCommandTrajectory(velocity, gamma_c, heading)

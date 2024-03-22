@@ -397,6 +397,7 @@ def writeKMLfromObj(GuidanceSystemObject, saveFolder=None, noise=False, downsamp
                             description='A waypoint defined by the FANGS user for drone fly-over',
                             coords = [tgt[::-1]])
             kml.save(f'{saveFolder}\\agent_{GuidanceSystemObject.Vehicle.aircraftID}_target_{ii}.kml')
+            ii += 1
     
 
 @contextmanager
