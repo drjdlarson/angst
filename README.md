@@ -18,8 +18,10 @@ The algorithms followed for the nonlinear controller are described in the case s
 Version notes: v2.0.0
 - This version added changes to the API to allow the user to input an "absolute" command: Flyover waypoint, Groundspeed, Altitude
 - This adds the capability for the user to designate mission-related commands.
+
 Version notes: v2.0.1
 - Bug hunting
+
 Version notes: v2.1.0
 - Attempted stall prevention.
 
