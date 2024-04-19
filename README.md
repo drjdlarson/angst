@@ -9,7 +9,7 @@
 ![Stars](https://img.shields.io/github/stars/ahspringer/FANGS?style=plastic)
 ![Issues](https://img.shields.io/github/issues/ahspringer/FANGS?style=plastic)
 
-## (F)ixed Wing (A)ircraft (N)onlinear (G)uidance (S)ystem v2.0
+## (F)ixed Wing (A)ircraft (N)onlinear (G)uidance (S)ystem v2.1
 
 ### Description
 
