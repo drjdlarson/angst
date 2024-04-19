@@ -15,9 +15,15 @@
         Loose integration with FANGS
     Version notes: v0.0.3
         Create debug option
+    Version notes: v0.1.0
+        First roll-out of the ATAMS package.
+        Still needs a ton of development but is useable as-is for the FANGS application.
+        Only includes assignment algorithms.
+        Does not include any agent tracking.
+        Suggested roll to v1.0.0 once agent tracking is implemented.
 """
 __author__ = "Alex Springer"
-__version__ = "0.0.3"
+__version__ = "0.1.0"
 __email__ = "springer.alex.h@gmail.com"
 __status__ = "Development"
 
@@ -55,6 +61,8 @@ class assignments:
     def calculateCosts(self, agentStates, targets):
         """ Calculate the cost associated with each possible agent-target
         assignment based on current agent states and target(s).
+
+        NOTE: This is all hard-coded to be compatible with FANGS. Future revisions need to make this less specific.
         
         Parameters
         ----------
@@ -98,7 +106,7 @@ class assignments:
 
                 altitudeChange = targets[target][2] - agentStates[agent][2]
                 if altitudeChange < 0:
-                    # It's cheaper to lower altitude than it is to raise altitude
+                    # It's cheaper to lower altitude than it is to raise it
                     flightPathWeight = 0.75
                 else:
                     flightPathWeight = 1

@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+""" An 8-drone simulation of the FANGS implementing both trajectory and flyover commands.
+        > Use Case: Grand Canyon Search and Rescue
+        > Utilizes automatic agent/target assignments (ATAMS)
+
+    NOTE: MOVE TO TOP DIRECTORY BEFORE RUNNING THIS SIMULATION
+"""
 from vehicle.FixedWingVehicle import FixedWingVehicle
 from vehicle.ideal_EOM import ideal_EOM_RBFW as RBFW
 import controller.utils as utils

@@ -1,14 +1,7 @@
 #!/usr/bin/env python
-""" Fixed Wing (N)onlinear (A)ircraft - (P)erformance (S)imulation
-        The algorithms followed for the nonlinear controller are described in the case study for a
-        Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook.
-        This project is a nonlinear controller for a fixed-wing aircraft.
-        This code will allow one to model a rigid aircraft operating in steady winds.
-        The aircraft will be guided via nonlinear feedback laws to follow a specified flight profile:
-            - Commanded velocities
-            - Commanded rates of climb/descent
-            - Commanded headings
-        In the current implementation, the attitude dynamics of the vehicle are approximated using ideal equations of motion.
+""" An 8-drone simulation of the FANGS implementing both trajectory and flyover commands.
+        > Use Case: Grand Canyon Search and Rescue
+        > Manual agent/target assignments
 
     NOTE: MOVE TO TOP DIRECTORY BEFORE RUNNING THIS SIMULATION
 """

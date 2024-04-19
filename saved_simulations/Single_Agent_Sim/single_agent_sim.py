@@ -67,7 +67,7 @@ def runsim(stopTime, saveSimulationFilePath=None, saveFiguresFolderPath=None):
         "sigma": C2['heading'],  # Northbound
         "lat": lat,
         "lon": lon,
-        "v_WN_N": [0 * utils.knts2fps, 15 * utils.knts2fps, 0],
+        "v_WN_N": [0 * utils.knts2fps, 15 * utils.knts2fps, 0],  # 15 knot wind out of the west
         "weight": 80,
     }
 
