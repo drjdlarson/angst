@@ -1,4 +1,4 @@
-# FANGS v2.1
+# ANGST v2.1
 
 <!-- <a href="https://join.slack.com/t/ngc-goz8665/shared_invite/zt-r01kumfq-dQUT3c95BxEP_fnk4yJFfQ">
 <img alt="Join us on Slack" src="https://raw.githubusercontent.com/netlify/netlify-cms/master/website/static/img/slack.png" width="165"/>
@@ -9,11 +9,11 @@
 ![Stars](https://img.shields.io/github/stars/ahspringer/FANGS?style=plastic)
 ![Issues](https://img.shields.io/github/issues/ahspringer/FANGS?style=plastic)
 
-## (F)ixed Wing (A)ircraft (N)onlinear (G)uidance (S)ystem v2.1
+## Airborne Nonlinear Guidance Simulator for Teaming v2.2
 
 ### Description
 
-The algorithms followed for the nonlinear controller are described in the case study for a Nonlinear Aircraft-Performance Simulation by Dr. John Schierman in his Modern Flight Dynamics textbook. This project is a nonlinear controller for a fixed-wing aircraft. The _fangs.GuidanceSystem_ has a baked-in default state estimator utilizing ideal equations of motion, but the user is encouraged to provide their own state solution at each time step using their own state solver or states and rates of their aircraft if this set of algorithms is used for real flight.
+The algorithms followed for the nonlinear controller are based on the case study for a Nonlinear Aircraft-Performance Simulation by Dr. David K. Schmidt in his Modern Flight Dynamics textbook, but expanded to build nonlinear guidance systems for any airborne vehicle using the wind frame. The _fangs.GuidanceSystem_ has a baked-in default state estimator utilizing ideal equations of motion, but the user is encouraged to provide their own state solution at each time step using their own state solver or states and rates of their aircraft if this set of algorithms is used for real flight.
 
 Version notes: v2.0.0
 - This version added changes to the API to allow the user to input an "absolute" command: Flyover waypoint, Groundspeed, Altitude
@@ -25,18 +25,18 @@ Version notes: v2.0.1
 Version notes: v2.1.0
 - Attempted stall prevention.
 
-## (A)gent (T)racking and (A)ssignment (M)anagement (S)ystem v0.1
+## Agent Tracking and Management v0.1
 
 ### Description
 
-This system target assignment algorithms, and future implementation will include tracking of airborne agents (e.g., drone swarms). The tracking functions utilized in this system will be nothing more than wrappers for the Command & control (C2) of Autonomous Random finite set- (RFS-) Based Swarms (CARBS) developed by the Laboratory for Autonomy, GNC,
+This system target assignment algorithms, and future implementation will include tracking of multiple airborne agents operating in a team, e.g., drone swarms. The tracking functions utilized in this system will be nothing more than wrappers for the Command & control (C2) of Autonomous Random finite set- (RFS-) Based Swarms (CARBS) developed by the Laboratory for Autonomy, GNC,
 and Estimation Research (LAGER) at the University of Alabama (UA). The target assignment algorithms currently in use in this system are the:
 1. Hungarian assignment algorithm
 2. {TBD}
 
 Version notes: v0.1.0
 - First roll-out of the ATAMS package.
-- Still needs a ton of development but is useable as-is for the FANGS application.
+- Still needs a ton of development but is useable as-is for the ANGST application.
 - Only includes assignment algorithms.
 - Does not include any agent tracking.
 - Suggested roll to v1.0.0 once agent tracking is implemented.
