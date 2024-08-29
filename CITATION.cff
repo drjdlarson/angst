@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Larson"
+  given-names: "Jordan Douglas"
+  orcid: "https://orcid.org/0000-0002-5102-1763"
+- family-names: "Springer"
+  given-names: "Alex H."
+- family-names: "Lombardo"
+  given-names: "Gideon L."
+title: "Airborne Nonlinear Guidance Simulator for Teaming"
+version: 0.0.1
+doi: 10.5281/zenodo.13501298
+date-released: 2024-08-29
+url: "https://github.com/drjdlarson/angst"
+preferred-citation:
+  type: software
+  authors:
+  - family-names: "Larson"
+    given-names: "Jordan Douglas"
+    orcid: "https://orcid.org/0000-0002-5102-1763"
+  - family-names: "Springer"
+    given-names: "Alex H."
+  - family-names: "Lombardo"
+    given-names: "Gideon L."
+  doi: "10.5281/zenodo.13501298"
+  title: "Airborne Nonlinear Guidance Simulator for Teaming"
+  version: 0.0.1
+  year: 2024
